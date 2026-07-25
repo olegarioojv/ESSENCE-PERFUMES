@@ -241,12 +241,12 @@ contra banco real.
 
 # Fase 11 --- Pedidos
 
--   [ ] Criar pedido
--   [ ] Checkout
--   [ ] Timeline
--   [ ] Histórico
--   [ ] Alterar status
--   [ ] Cancelamento
+-   [x] Criar pedido
+-   [x] Checkout
+-   [x] Timeline
+-   [x] Histórico
+-   [x] Alterar status
+-   [x] Cancelamento
 -   [ ] Rastreamento (V2)
 -   [ ] Estorno (V2)
 

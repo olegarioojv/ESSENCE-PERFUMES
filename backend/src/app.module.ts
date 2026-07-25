@@ -16,6 +16,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { HealthModule } from './modules/health/health.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { ProductsModule } from './modules/products/products.module';
 import { StockModule } from './modules/stock/stock.module';
 import { UsersModule } from './modules/users/users.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './modules/users/users.module';
     StockModule,
     CartModule,
     FavoritesModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [
