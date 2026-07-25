@@ -222,12 +222,12 @@ contra banco real.
 
 # Fase 9 --- Carrinho
 
--   [ ] Criar carrinho
--   [ ] Adicionar item
--   [ ] Remover item
--   [ ] Atualizar quantidade
--   [ ] Persistência
--   [ ] Resumo
+-   [x] Criar carrinho
+-   [x] Adicionar item
+-   [x] Remover item
+-   [x] Atualizar quantidade
+-   [x] Persistência
+-   [x] Resumo
 
 ------------------------------------------------------------------------
 
