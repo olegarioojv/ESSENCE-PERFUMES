@@ -15,6 +15,7 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
+import { StockModule } from './modules/stock/stock.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -41,6 +42,7 @@ import { UsersModule } from './modules/users/users.module';
     CategoriesModule,
     BrandsModule,
     ProductsModule,
+    StockModule,
   ],
   controllers: [AppController],
   providers: [

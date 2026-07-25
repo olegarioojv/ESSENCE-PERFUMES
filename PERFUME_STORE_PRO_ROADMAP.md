@@ -209,14 +209,14 @@ contra banco real.
 
 # Fase 8 --- Estoque
 
--   [ ] Entrada
--   [ ] Saída
--   [ ] Movimentação
--   [ ] Histórico
--   [ ] Inventário
--   [ ] Reserva
--   [ ] Ajuste manual
--   [ ] Alerta de baixo estoque
+-   [x] Entrada
+-   [x] Saída
+-   [x] Movimentação
+-   [x] Histórico
+-   [x] Inventário
+-   [x] Reserva
+-   [x] Ajuste manual
+-   [x] Alerta de baixo estoque
 
 ------------------------------------------------------------------------
 
