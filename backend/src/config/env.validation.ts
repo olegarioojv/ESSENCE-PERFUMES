@@ -36,6 +36,18 @@ class EnvironmentVariables {
   @IsNumber()
   @Min(1)
   JWT_EXPIRES_IN_SECONDS: number;
+
+  @IsNumber()
+  @Min(4)
+  BCRYPT_SALT_ROUNDS: number;
+
+  @IsNumber()
+  @Min(1)
+  REFRESH_TOKEN_EXPIRES_IN_SECONDS: number;
+
+  @IsNumber()
+  @Min(1)
+  RESET_PASSWORD_TOKEN_EXPIRES_IN_SECONDS: number;
 }
 
 export function validate(config: Record<string, unknown>) {

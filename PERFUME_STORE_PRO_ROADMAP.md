@@ -124,15 +124,22 @@ healthcheck passando e `GET /health` retornando `status: ok`.
 
 # Fase 3 --- Autenticação
 
--   [ ] Cadastro
--   [ ] Login
--   [ ] JWT
--   [ ] Refresh Token
--   [ ] Logout
--   [ ] Recuperação de senha
--   [ ] Alteração de senha
--   [ ] Perfil
--   [ ] Permissões (Admin / Cliente)
+-   [x] Cadastro
+-   [x] Login
+-   [x] JWT
+-   [x] Refresh Token
+-   [x] Logout
+-   [x] Recuperação de senha
+-   [x] Alteração de senha
+-   [x] Perfil
+-   [x] Permissões (Admin / Cliente)
+
+**Entrega:** `POST /auth/register|login|refresh|logout|forgot-password|
+reset-password|change-password` e `GET/PATCH /users/me` + `GET /users`
+(admin) funcionando, com refresh token persistido e revogável, reset de
+senha via token hasheado (log em vez de e-mail por enquanto) e permissões
+Admin/Cliente via `RolesGuard`. Coberto por 18 testes unitários e 12 e2e
+contra banco real.
 
 ------------------------------------------------------------------------
 
