@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 import { HealthModule } from './modules/health/health.module';
 import { ProductsModule } from './modules/products/products.module';
 import { StockModule } from './modules/stock/stock.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './modules/users/users.module';
     ProductsModule,
     StockModule,
     CartModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -233,9 +233,9 @@ contra banco real.
 
 # Fase 10 --- Favoritos
 
--   [ ] Adicionar
--   [ ] Remover
--   [ ] Listar
+-   [x] Adicionar
+-   [x] Remover
+-   [x] Listar
 
 ------------------------------------------------------------------------
 
