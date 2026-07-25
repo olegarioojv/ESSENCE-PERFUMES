@@ -71,6 +71,7 @@ export class UsersController {
     const avatarUrl = await this.cloudinaryService.uploadImage(
       file.buffer,
       user.sub,
+      'avatars',
     );
     return this.usersService.updateAvatar(user.sub, avatarUrl);
   }

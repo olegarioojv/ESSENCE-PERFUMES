@@ -22,11 +22,15 @@ export class CloudinaryService implements OnModuleInit {
     });
   }
 
-  async uploadImage(buffer: Buffer, publicId: string): Promise<string> {
+  async uploadImage(
+    buffer: Buffer,
+    publicId: string,
+    folder: string,
+  ): Promise<string> {
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: 'avatars',
+          folder,
           public_id: publicId,
           overwrite: true,
           resource_type: 'image',

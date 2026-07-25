@@ -157,15 +157,15 @@ contra banco real.
 
 ## Categorias
 
--   [ ] CRUD
--   [ ] Slug
--   [ ] Ativar/Inativar
+-   [x] CRUD
+-   [x] Slug
+-   [x] Ativar/Inativar
 
 ## Marcas
 
--   [ ] CRUD
--   [ ] Logo
--   [ ] Descrição
+-   [x] CRUD
+-   [x] Logo
+-   [x] Descrição
 
 ------------------------------------------------------------------------
 
