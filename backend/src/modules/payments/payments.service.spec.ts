@@ -190,8 +190,8 @@ describe('PaymentsService', () => {
       await expect(
         service.processWebhook('wrong-secret', {
           id: 'log-1',
-          event: 'billing.paid',
-          data: { id: 'charge-1' },
+          event: 'transparent.completed',
+          data: { transparent: { id: 'charge-1' } },
         }),
       ).rejects.toThrow(UnauthorizedException);
     });
@@ -204,8 +204,8 @@ describe('PaymentsService', () => {
 
       await service.processWebhook('test-secret', {
         id: 'log-1',
-        event: 'billing.paid',
-        data: { id: 'charge-1', status: 'PAID' },
+        event: 'transparent.completed',
+        data: { transparent: { id: 'charge-1', status: 'PAID' } },
       });
 
       expect(ordersService.updateStatus).toHaveBeenCalledWith(
@@ -220,8 +220,8 @@ describe('PaymentsService', () => {
 
       const result = await service.processWebhook('test-secret', {
         id: 'log-1',
-        event: 'billing.paid',
-        data: { id: 'unknown-charge' },
+        event: 'transparent.completed',
+        data: { transparent: { id: 'unknown-charge' } },
       });
 
       expect(result).toEqual({ received: true });

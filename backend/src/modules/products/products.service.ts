@@ -48,6 +48,7 @@ export class ProductsService {
       description: dto.description ?? null,
       price: dto.price.toFixed(2),
       promotionalPrice: dto.promotionalPrice?.toFixed(2) ?? null,
+      costPrice: dto.costPrice?.toFixed(2) ?? null,
       promotionStartsAt: dto.promotionStartsAt
         ? new Date(dto.promotionStartsAt)
         : null,
@@ -197,6 +198,9 @@ export class ProductsService {
     }
     if (dto.promotionalPrice !== undefined) {
       data.promotionalPrice = dto.promotionalPrice.toFixed(2);
+    }
+    if (dto.costPrice !== undefined) {
+      data.costPrice = dto.costPrice.toFixed(2);
     }
     if (dto.promotionStartsAt !== undefined) {
       data.promotionStartsAt = new Date(dto.promotionStartsAt);

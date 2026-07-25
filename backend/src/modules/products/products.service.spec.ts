@@ -24,6 +24,7 @@ function buildProduct(overrides: Partial<Product> = {}): Product {
     description: null,
     price: '899.90',
     promotionalPrice: null,
+    costPrice: null,
     promotionStartsAt: null,
     promotionEndsAt: null,
     brandId: 'brand-1',

@@ -65,6 +65,13 @@ export class CreateProductDto {
   @IsPositive()
   promotionalPrice?: number;
 
+  @ApiPropertyOptional({ example: 450.0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  costPrice?: number;
+
   @ApiPropertyOptional({ example: '2026-08-01T00:00:00.000Z' })
   @IsOptional()
   @IsDateString()

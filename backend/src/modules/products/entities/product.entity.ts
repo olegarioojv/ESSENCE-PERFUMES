@@ -39,6 +39,9 @@ export class Product {
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
   promotionalPrice: string | null;
 
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  costPrice: string | null;
+
   @Column({ type: 'timestamp', nullable: true })
   promotionStartsAt: Date | null;
 

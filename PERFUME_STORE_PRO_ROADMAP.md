@@ -265,15 +265,15 @@ contra banco real.
 
 # Fase 13 --- Dashboard
 
--   [ ] Total de vendas
--   [ ] Pedidos
--   [ ] Clientes
--   [ ] Produtos
--   [ ] Ticket médio
--   [ ] Lucro
--   [ ] Produtos mais vendidos
--   [ ] Produtos sem estoque
--   [ ] Gráficos
+-   [x] Total de vendas
+-   [x] Pedidos
+-   [x] Clientes
+-   [x] Produtos
+-   [x] Ticket médio
+-   [x] Lucro
+-   [x] Produtos mais vendidos
+-   [x] Produtos sem estoque
+-   [x] Gráficos
 
 ------------------------------------------------------------------------
 
