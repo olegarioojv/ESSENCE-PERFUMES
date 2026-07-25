@@ -120,6 +120,10 @@ export class OrdersService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  async getById(orderId: string): Promise<Order> {
+    return this.findOrderOrThrow(orderId);
+  }
+
   async findOne(
     orderId: string,
     requester: RequestingUser,

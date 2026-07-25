@@ -254,12 +254,12 @@ contra banco real.
 
 # Fase 12 --- Pagamentos
 
--   [ ] Criar cobrança PIX
--   [ ] Consultar cobrança
--   [ ] Webhook
--   [ ] Confirmar pagamento
--   [ ] Cancelar cobrança
--   [ ] Logs
+-   [x] Criar cobrança PIX
+-   [x] Consultar cobrança
+-   [x] Webhook
+-   [x] Confirmar pagamento
+-   [x] Cancelar cobrança
+-   [x] Logs
 
 ------------------------------------------------------------------------
 

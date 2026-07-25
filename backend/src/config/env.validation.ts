@@ -57,6 +57,12 @@ class EnvironmentVariables {
 
   @IsString()
   CLOUDINARY_API_SECRET: string;
+
+  @IsString()
+  ABACATEPAY_API_KEY: string;
+
+  @IsString()
+  ABACATEPAY_WEBHOOK_SECRET: string;
 }
 
 export function validate(config: Record<string, unknown>) {
