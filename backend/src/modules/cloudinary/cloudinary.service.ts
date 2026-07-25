@@ -26,7 +26,7 @@ export class CloudinaryService implements OnModuleInit {
     buffer: Buffer,
     publicId: string,
     folder: string,
-  ): Promise<string> {
+  ): Promise<{ url: string; publicId: string }> {
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -46,6 +46,10 @@ export class CloudinaryService implements OnModuleInit {
       uploadStream.end(buffer);
     });
 
-    return result.secure_url;
+    return { url: result.secure_url, publicId: result.public_id };
+  }
+
+  async deleteImage(publicId: string): Promise<void> {
+    await cloudinary.uploader.destroy(publicId);
   }
 }

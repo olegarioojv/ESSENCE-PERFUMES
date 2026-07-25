@@ -80,12 +80,12 @@ export class BrandsController {
     file: Express.Multer.File,
   ) {
     await this.brandsService.findById(id);
-    const logoUrl = await this.cloudinaryService.uploadImage(
+    const { url } = await this.cloudinaryService.uploadImage(
       file.buffer,
       id,
       'brands',
     );
-    return this.brandsService.updateLogo(id, logoUrl);
+    return this.brandsService.updateLogo(id, url);
   }
 
   @UseGuards(RolesGuard)

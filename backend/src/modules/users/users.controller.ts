@@ -68,12 +68,12 @@ export class UsersController {
     )
     file: Express.Multer.File,
   ) {
-    const avatarUrl = await this.cloudinaryService.uploadImage(
+    const { url } = await this.cloudinaryService.uploadImage(
       file.buffer,
       user.sub,
       'avatars',
     );
-    return this.usersService.updateAvatar(user.sub, avatarUrl);
+    return this.usersService.updateAvatar(user.sub, url);
   }
 
   @HttpCode(HttpStatus.OK)

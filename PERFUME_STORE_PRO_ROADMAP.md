@@ -199,11 +199,11 @@ contra banco real.
 
 # Fase 7 --- Imagens
 
--   [ ] Cloudinary
--   [ ] Upload
--   [ ] Exclusão
--   [ ] Galeria
--   [ ] Imagem principal
+-   [x] Cloudinary
+-   [x] Upload
+-   [x] Exclusão
+-   [x] Galeria
+-   [x] Imagem principal
 
 ------------------------------------------------------------------------
 
