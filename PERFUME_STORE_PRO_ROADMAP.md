@@ -171,29 +171,29 @@ contra banco real.
 
 # Fase 6 --- Produtos
 
--   [ ] Nome
--   [ ] SKU
--   [ ] Slug
--   [ ] Código de barras
--   [ ] EAN
--   [ ] Descrição
--   [ ] Preço
--   [ ] Promoção
--   [ ] Marca
--   [ ] Categoria
--   [ ] Volume
--   [ ] Peso
--   [ ] Família olfativa
--   [ ] Notas
--   [ ] Meta Title
--   [ ] Meta Description
--   [ ] SEO
--   [ ] Destaque
--   [ ] Ativo
--   [ ] Busca
--   [ ] Paginação
--   [ ] Filtros
--   [ ] Ordenação
+-   [x] Nome
+-   [x] SKU
+-   [x] Slug
+-   [x] Código de barras
+-   [x] EAN
+-   [x] Descrição
+-   [x] Preço
+-   [x] Promoção
+-   [x] Marca
+-   [x] Categoria
+-   [x] Volume
+-   [x] Peso
+-   [x] Família olfativa
+-   [x] Notas
+-   [x] Meta Title
+-   [x] Meta Description
+-   [x] SEO
+-   [x] Destaque
+-   [x] Ativo
+-   [x] Busca
+-   [x] Paginação
+-   [x] Filtros
+-   [x] Ordenação
 
 ------------------------------------------------------------------------
 
