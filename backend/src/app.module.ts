@@ -8,6 +8,8 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { validate } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { UsersModule } from './modules/users/users.module';
@@ -31,6 +33,8 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     AuthModule,
     HealthModule,
+    AddressesModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [

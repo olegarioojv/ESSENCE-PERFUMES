@@ -1,4 +1,8 @@
-import { ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -10,6 +14,7 @@ import { Role } from '../users/entities/role.enum';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { LoginHistory } from './entities/login-history.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 
@@ -37,14 +42,24 @@ describe('AuthService', () => {
   let usersService: jest.Mocked<
     Pick<
       UsersService,
-      'create' | 'findByEmail' | 'findById' | 'findByIdWithPassword' | 'updatePassword'
+      | 'create'
+      | 'findByEmail'
+      | 'findById'
+      | 'findByIdWithPassword'
+      | 'updatePassword'
     >
   >;
   let refreshTokensRepository: jest.Mocked<
     Pick<Repository<RefreshToken>, 'create' | 'save' | 'findOne' | 'update'>
   >;
   let passwordResetTokensRepository: jest.Mocked<
-    Pick<Repository<PasswordResetToken>, 'create' | 'save' | 'findOne' | 'update'>
+    Pick<
+      Repository<PasswordResetToken>,
+      'create' | 'save' | 'findOne' | 'update'
+    >
+  >;
+  let loginHistoryRepository: jest.Mocked<
+    Pick<Repository<LoginHistory>, 'create' | 'save' | 'find'>
   >;
 
   beforeEach(async () => {
@@ -70,20 +85,41 @@ describe('AuthService', () => {
       update: jest.fn(),
     };
 
+    loginHistoryRepository = {
+      create: jest.fn((data) => data as LoginHistory),
+      save: jest.fn((entity) => Promise.resolve(entity as LoginHistory)),
+      find: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
-        { provide: JwtService, useValue: { signAsync: jest.fn().mockResolvedValue('access-token') } },
+        {
+          provide: JwtService,
+          useValue: { signAsync: jest.fn().mockResolvedValue('access-token') },
+        },
         {
           provide: ConfigService,
-          useValue: { getOrThrow: jest.fn((key: string) => CONFIG_VALUES[key]) },
+          useValue: {
+            getOrThrow: jest.fn((key: string) => CONFIG_VALUES[key]),
+          },
         },
-        { provide: PinoLogger, useValue: { setContext: jest.fn(), info: jest.fn() } },
-        { provide: getRepositoryToken(RefreshToken), useValue: refreshTokensRepository },
+        {
+          provide: PinoLogger,
+          useValue: { setContext: jest.fn(), info: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: refreshTokensRepository,
+        },
         {
           provide: getRepositoryToken(PasswordResetToken),
           useValue: passwordResetTokensRepository,
+        },
+        {
+          provide: getRepositoryToken(LoginHistory),
+          useValue: loginHistoryRepository,
         },
       ],
     }).compile();
@@ -114,10 +150,16 @@ describe('AuthService', () => {
     });
 
     it('propagates ConflictException on duplicate email', async () => {
-      usersService.create.mockRejectedValue(new ConflictException('Email já cadastrado'));
+      usersService.create.mockRejectedValue(
+        new ConflictException('Email já cadastrado'),
+      );
 
       await expect(
-        service.register({ name: 'X', email: 'dup@example.com', password: 'Senha123' }),
+        service.register({
+          name: 'X',
+          email: 'dup@example.com',
+          password: 'Senha123',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -132,7 +174,9 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for wrong password with the same message as unknown email', async () => {
-      const user = buildUser({ passwordHash: await bcrypt.hash('CorrectPass1', 4) });
+      const user = buildUser({
+        passwordHash: await bcrypt.hash('CorrectPass1', 4),
+      });
       usersService.findByEmail.mockResolvedValue(user);
 
       try {
@@ -140,15 +184,22 @@ describe('AuthService', () => {
         fail('expected UnauthorizedException');
       } catch (error) {
         expect(error).toBeInstanceOf(UnauthorizedException);
-        expect((error as UnauthorizedException).message).toBe('Credenciais inválidas');
+        expect((error as UnauthorizedException).message).toBe(
+          'Credenciais inválidas',
+        );
       }
 
       usersService.findByEmail.mockResolvedValue(null);
       try {
-        await service.login({ email: 'ghost@example.com', password: 'WrongPass1' });
+        await service.login({
+          email: 'ghost@example.com',
+          password: 'WrongPass1',
+        });
         fail('expected UnauthorizedException');
       } catch (error) {
-        expect((error as UnauthorizedException).message).toBe('Credenciais inválidas');
+        expect((error as UnauthorizedException).message).toBe(
+          'Credenciais inválidas',
+        );
       }
     });
 
@@ -157,10 +208,67 @@ describe('AuthService', () => {
       const user = buildUser({ passwordHash });
       usersService.findByEmail.mockResolvedValue(user);
 
-      const result = await service.login({ email: user.email, password: 'Senha123' });
+      const result = await service.login({
+        email: user.email,
+        password: 'Senha123',
+      });
 
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toEqual(expect.any(String));
+    });
+
+    it('records login history with the request context on success', async () => {
+      const passwordHash = await bcrypt.hash('Senha123', 4);
+      const user = buildUser({ passwordHash });
+      usersService.findByEmail.mockResolvedValue(user);
+
+      await service.login(
+        { email: user.email, password: 'Senha123' },
+        { ipAddress: '127.0.0.1', userAgent: 'jest' },
+      );
+
+      expect(loginHistoryRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user.id,
+          ipAddress: '127.0.0.1',
+          userAgent: 'jest',
+        }),
+      );
+    });
+
+    it('does not record login history on failed credentials', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        service.login({ email: 'ghost@example.com', password: 'Senha123' }),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(loginHistoryRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getLoginHistory', () => {
+    it('returns entries ordered by most recent, scoped to the user', async () => {
+      const entries: LoginHistory[] = [
+        {
+          id: 'lh-1',
+          userId: 'user-1',
+          ipAddress: '127.0.0.1',
+          userAgent: 'jest',
+          createdAt: new Date(),
+        },
+      ];
+      loginHistoryRepository.find.mockResolvedValue(entries);
+
+      const result = await service.getLoginHistory('user-1');
+
+      expect(loginHistoryRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1' },
+          order: { createdAt: 'DESC' },
+        }),
+      );
+      expect(result).toBe(entries);
     });
   });
 
@@ -189,7 +297,9 @@ describe('AuthService', () => {
     it('throws UnauthorizedException when the token is not found (expired/revoked/unknown)', async () => {
       refreshTokensRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.refresh('bad-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('bad-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -207,7 +317,9 @@ describe('AuthService', () => {
     it('returns the same generic message when the email does not exist, without persisting anything', async () => {
       usersService.findByEmail.mockResolvedValue(null);
 
-      const result = await service.forgotPassword({ email: 'ghost@example.com' });
+      const result = await service.forgotPassword({
+        email: 'ghost@example.com',
+      });
 
       expect(result.message).toBe('Se o email existir, enviaremos instruções.');
       expect(passwordResetTokensRepository.save).not.toHaveBeenCalled();
@@ -219,7 +331,10 @@ describe('AuthService', () => {
       passwordResetTokensRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.resetPassword({ token: 'bad-token', newPassword: 'NovaSenha123' }),
+        service.resetPassword({
+          token: 'bad-token',
+          newPassword: 'NovaSenha123',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -233,9 +348,15 @@ describe('AuthService', () => {
         createdAt: new Date(),
       });
 
-      await service.resetPassword({ token: 'good-token', newPassword: 'NovaSenha123' });
+      await service.resetPassword({
+        token: 'good-token',
+        newPassword: 'NovaSenha123',
+      });
 
-      expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', expect.any(String));
+      expect(usersService.updatePassword).toHaveBeenCalledWith(
+        'user-1',
+        expect.any(String),
+      );
       expect(passwordResetTokensRepository.update).toHaveBeenCalledWith(
         'prt-1',
         expect.objectContaining({ usedAt: expect.any(Date) }),
@@ -249,7 +370,9 @@ describe('AuthService', () => {
 
   describe('changePassword', () => {
     it('throws UnauthorizedException when the current password is wrong', async () => {
-      const user = buildUser({ passwordHash: await bcrypt.hash('CorrectPass1', 4) });
+      const user = buildUser({
+        passwordHash: await bcrypt.hash('CorrectPass1', 4),
+      });
       usersService.findByIdWithPassword.mockResolvedValue(user);
 
       await expect(
@@ -270,7 +393,10 @@ describe('AuthService', () => {
         newPassword: 'NovaSenha123',
       });
 
-      expect(usersService.updatePassword).toHaveBeenCalledWith(user.id, expect.any(String));
+      expect(usersService.updatePassword).toHaveBeenCalledWith(
+        user.id,
+        expect.any(String),
+      );
       expect(refreshTokensRepository.update).toHaveBeenCalledWith(
         { userId: user.id, revokedAt: expect.anything() },
         expect.objectContaining({ revokedAt: expect.any(Date) }),

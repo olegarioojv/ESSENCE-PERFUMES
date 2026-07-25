@@ -18,9 +18,15 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { LoginHistory } from './entities/login-history.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+
+export interface LoginContext {
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
 
 export interface AuthTokens {
   accessToken: string;
@@ -53,6 +59,8 @@ export class AuthService {
     private readonly refreshTokensRepository: Repository<RefreshToken>,
     @InjectRepository(PasswordResetToken)
     private readonly passwordResetTokensRepository: Repository<PasswordResetToken>,
+    @InjectRepository(LoginHistory)
+    private readonly loginHistoryRepository: Repository<LoginHistory>,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -72,15 +80,37 @@ export class AuthService {
     return { user: toSafeUser(user), ...tokens };
   }
 
-  async login(dto: LoginDto): Promise<{ user: SafeUser } & AuthTokens> {
+  async login(
+    dto: LoginDto,
+    context: LoginContext = {},
+  ): Promise<{ user: SafeUser } & AuthTokens> {
     const user = await this.usersService.findByEmail(dto.email, true);
 
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    const loginHistory = this.loginHistoryRepository.create({
+      userId: user.id,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    await this.loginHistoryRepository.save(loginHistory);
+
     const tokens = await this.issueTokens(user);
     return { user: toSafeUser(user), ...tokens };
+  }
+
+  async getLoginHistory(
+    userId: string,
+    { page = 1, limit = 20 }: { page?: number; limit?: number } = {},
+  ): Promise<LoginHistory[]> {
+    return this.loginHistoryRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {

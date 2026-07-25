@@ -145,11 +145,11 @@ contra banco real.
 
 # Fase 4 --- Usuários
 
--   [ ] CRUD de usuários
--   [ ] Endereços
--   [ ] Avatar
--   [ ] Histórico
--   [ ] Auditoria
+-   [x] CRUD de usuários
+-   [x] Endereços
+-   [x] Avatar
+-   [x] Histórico
+-   [x] Auditoria
 
 ------------------------------------------------------------------------
 

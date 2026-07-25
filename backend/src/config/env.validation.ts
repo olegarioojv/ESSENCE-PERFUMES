@@ -48,6 +48,15 @@ class EnvironmentVariables {
   @IsNumber()
   @Min(1)
   RESET_PASSWORD_TOKEN_EXPIRES_IN_SECONDS: number;
+
+  @IsString()
+  CLOUDINARY_CLOUD_NAME: string;
+
+  @IsString()
+  CLOUDINARY_API_KEY: string;
+
+  @IsString()
+  CLOUDINARY_API_SECRET: string;
 }
 
 export function validate(config: Record<string, unknown>) {

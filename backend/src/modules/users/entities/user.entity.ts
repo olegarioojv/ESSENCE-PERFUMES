@@ -24,9 +24,15 @@ export class User {
   @Column({ type: 'enum', enum: Role, default: Role.CLIENTE })
   role: Role;
 
+  @Column({ type: 'text', nullable: true })
+  avatarUrl: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
 }
