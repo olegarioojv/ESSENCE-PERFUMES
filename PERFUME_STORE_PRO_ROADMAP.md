@@ -310,18 +310,18 @@ contra banco real.
 
 ## Configuração
 
--   [ ] Criar projeto Next.js
--   [ ] Configurar Styled Components
--   [ ] Configurar ThemeProvider
--   [ ] Configurar Global Styles
--   [ ] Configurar Zustand
--   [ ] Configurar Axios
--   [ ] Configurar Zod
--   [ ] Configurar Framer Motion
--   [ ] Configurar Rotas
--   [ ] Configurar Layout
--   [ ] Configurar SEO
--   [ ] Configurar Testes
+-   [x] Criar projeto Next.js
+-   [x] Configurar Styled Components
+-   [x] Configurar ThemeProvider
+-   [x] Configurar Global Styles
+-   [x] Configurar Zustand
+-   [x] Configurar Axios
+-   [x] Configurar Zod
+-   [x] Configurar Framer Motion
+-   [x] Configurar Rotas
+-   [x] Configurar Layout
+-   [x] Configurar SEO
+-   [x] Configurar Testes
 
 ## Loja
 
