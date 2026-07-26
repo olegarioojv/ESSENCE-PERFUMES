@@ -294,14 +294,15 @@ contra banco real.
 -   [x] Pedido enviado
 -   [x] Recuperação de senha
 
+
 ------------------------------------------------------------------------
 
 # Fase 16 --- Testes
 
--   [ ] Unitários
--   [ ] Integração
--   [ ] Swagger
--   [ ] Postman
+-   [x] Unitários
+-   [x] Integração
+-   [x] Swagger
+-   [x] Postman
 
 ------------------------------------------------------------------------
 
