@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OrderStatus } from '../orders/entities/order-status.enum';
 import type { RequestingUser } from '../orders/orders.service';
 import { OrdersService } from '../orders/orders.service';
@@ -35,6 +36,7 @@ export class PaymentsService {
     private readonly abacatePayService: AbacatePayService,
     private readonly ordersService: OrdersService,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createCharge(
@@ -196,10 +198,14 @@ export class PaymentsService {
     );
 
     if (status === PaymentStatus.PAGO) {
-      await this.ordersService.updateStatus(
+      const order = await this.ordersService.updateStatus(
         payment.orderId,
         { status: OrderStatus.PAGO },
         'system:payments',
+      );
+      await this.notificationsService.notifyPaymentApproved(
+        order.userId,
+        order.id,
       );
     }
 

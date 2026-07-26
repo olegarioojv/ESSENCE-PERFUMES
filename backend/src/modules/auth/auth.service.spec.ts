@@ -10,6 +10,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { PinoLogger } from 'nestjs-pino';
 import { Repository } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Role } from '../users/entities/role.enum';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -120,6 +121,10 @@ describe('AuthService', () => {
         {
           provide: getRepositoryToken(LoginHistory),
           useValue: loginHistoryRepository,
+        },
+        {
+          provide: NotificationsService,
+          useValue: { notifyPasswordRecovery: jest.fn() },
         },
       ],
     }).compile();

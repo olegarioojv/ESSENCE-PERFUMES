@@ -289,10 +289,10 @@ contra banco real.
 
 # Fase 15 --- Notificações
 
--   [ ] Pedido criado
--   [ ] Pagamento aprovado
--   [ ] Pedido enviado
--   [ ] Recuperação de senha
+-   [x] Pedido criado
+-   [x] Pagamento aprovado
+-   [x] Pedido enviado
+-   [x] Recuperação de senha
 
 ------------------------------------------------------------------------
 

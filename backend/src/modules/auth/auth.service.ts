@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { PinoLogger } from 'nestjs-pino';
 import { MoreThan, IsNull, Repository } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Role } from '../users/entities/role.enum';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -61,6 +62,7 @@ export class AuthService {
     private readonly passwordResetTokensRepository: Repository<PasswordResetToken>,
     @InjectRepository(LoginHistory)
     private readonly loginHistoryRepository: Repository<LoginHistory>,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -164,6 +166,8 @@ export class AuthService {
         { email: user.email, resetToken: rawToken },
         'password reset token issued',
       );
+
+      await this.notificationsService.notifyPasswordRecovery(user.id);
     }
 
     return { message };

@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -17,6 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     PassportModule,
     UsersModule,
+    NotificationsModule,
     TypeOrmModule.forFeature([RefreshToken, PasswordResetToken, LoginHistory]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

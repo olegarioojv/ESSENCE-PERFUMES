@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartService } from '../cart/cart.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { StockService } from '../stock/stock.service';
 import { Role } from '../users/entities/role.enum';
 import { CancelOrderDto } from './dto/cancel-order.dto';
@@ -56,6 +57,7 @@ export class OrdersService {
     private readonly cartService: CartService,
     private readonly stockService: StockService,
     private readonly couponsService: CouponsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async checkout(
@@ -126,6 +128,8 @@ export class OrdersService {
     if (couponId) {
       await this.couponsService.registerUsage(couponId);
     }
+
+    await this.notificationsService.notifyOrderCreated(userId, order.id);
 
     return this.getOrderWithItems(order.id);
   }
@@ -220,6 +224,13 @@ export class OrdersService {
 
     if (status === OrderStatus.CANCELADO) {
       await this.restoreStock(order.id, actorId);
+    }
+
+    if (status === OrderStatus.ENVIADO) {
+      await this.notificationsService.notifyOrderShipped(
+        order.userId,
+        order.id,
+      );
     }
 
     return this.getOrderWithItems(order.id);

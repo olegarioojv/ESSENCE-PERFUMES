@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CartModule } from '../cart/cart.module';
 import { CouponsModule } from '../coupons/coupons.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { StockModule } from '../stock/stock.module';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { OrderItem } from './entities/order-item.entity';
@@ -15,6 +16,7 @@ import { OrdersService } from './orders.service';
     CartModule,
     StockModule,
     CouponsModule,
+    NotificationsModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

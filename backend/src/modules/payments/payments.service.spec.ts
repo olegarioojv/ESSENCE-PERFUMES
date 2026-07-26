@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OrderStatus } from '../orders/entities/order-status.enum';
 import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
@@ -68,6 +69,9 @@ describe('PaymentsService', () => {
     Pick<OrdersService, 'getById' | 'updateStatus'>
   >;
   let configService: jest.Mocked<Pick<ConfigService, 'getOrThrow'>>;
+  let notificationsService: jest.Mocked<
+    Pick<NotificationsService, 'notifyPaymentApproved'>
+  >;
 
   beforeEach(async () => {
     paymentsRepository = {
@@ -88,10 +92,13 @@ describe('PaymentsService', () => {
     };
     ordersService = {
       getById: jest.fn(),
-      updateStatus: jest.fn(),
+      updateStatus: jest.fn().mockResolvedValue({ ...buildOrder(), items: [] }),
     };
     configService = {
       getOrThrow: jest.fn().mockReturnValue('test-secret'),
+    };
+    notificationsService = {
+      notifyPaymentApproved: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -105,6 +112,7 @@ describe('PaymentsService', () => {
         { provide: AbacatePayService, useValue: abacatePayService },
         { provide: OrdersService, useValue: ordersService },
         { provide: ConfigService, useValue: configService },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 

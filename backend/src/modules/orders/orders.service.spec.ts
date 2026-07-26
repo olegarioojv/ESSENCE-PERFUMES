@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartService } from '../cart/cart.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { StockService } from '../stock/stock.service';
 import { Role } from '../users/entities/role.enum';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -52,6 +53,12 @@ describe('OrdersService', () => {
   let couponsService: jest.Mocked<
     Pick<CouponsService, 'validateForOrder' | 'registerUsage'>
   >;
+  let notificationsService: jest.Mocked<
+    Pick<
+      NotificationsService,
+      'notifyOrderCreated' | 'notifyOrderShipped' | 'notifyPaymentApproved'
+    >
+  >;
 
   beforeEach(async () => {
     ordersRepository = {
@@ -84,6 +91,11 @@ describe('OrdersService', () => {
       validateForOrder: jest.fn(),
       registerUsage: jest.fn(),
     };
+    notificationsService = {
+      notifyOrderCreated: jest.fn(),
+      notifyOrderShipped: jest.fn(),
+      notifyPaymentApproved: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -100,6 +112,7 @@ describe('OrdersService', () => {
         { provide: CartService, useValue: cartService },
         { provide: StockService, useValue: stockService },
         { provide: CouponsService, useValue: couponsService },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 

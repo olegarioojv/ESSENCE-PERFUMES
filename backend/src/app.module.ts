@@ -18,6 +18,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { HealthModule } from './modules/health/health.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -55,6 +56,7 @@ import { UsersModule } from './modules/users/users.module';
     PaymentsModule,
     DashboardModule,
     CouponsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
