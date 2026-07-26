@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { HealthModule } from './modules/health/health.module';
@@ -53,6 +54,7 @@ import { UsersModule } from './modules/users/users.module';
     OrdersModule,
     PaymentsModule,
     DashboardModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

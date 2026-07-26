@@ -279,11 +279,11 @@ contra banco real.
 
 # Fase 14 --- Cupons
 
--   [ ] CRUD
--   [ ] Percentual
--   [ ] Valor fixo
--   [ ] Validade
--   [ ] Limite de uso
+-   [x] CRUD
+-   [x] Percentual
+-   [x] Valor fixo
+-   [x] Validade
+-   [x] Limite de uso
 
 ------------------------------------------------------------------------
 

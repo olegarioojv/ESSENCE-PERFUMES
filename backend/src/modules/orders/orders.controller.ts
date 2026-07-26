@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { Role } from '../users/entities/role.enum';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 import { FindOrdersDto } from './dto/find-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
@@ -46,8 +47,8 @@ export class OrdersController {
   }
 
   @Post('checkout')
-  checkout(@CurrentUser() user: JwtPayload) {
-    return this.ordersService.checkout(user.sub);
+  checkout(@CurrentUser() user: JwtPayload, @Body() dto: CheckoutDto) {
+    return this.ordersService.checkout(user.sub, dto);
   }
 
   @Post(':id/cancel')

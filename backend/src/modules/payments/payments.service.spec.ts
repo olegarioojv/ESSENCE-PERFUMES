@@ -23,6 +23,8 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
     userId: 'user-1',
     status: OrderStatus.PENDENTE,
     subtotal: '100.00',
+    couponCode: null,
+    discountAmount: '0.00',
     total: '100.00',
     createdAt: new Date(),
     updatedAt: new Date(),

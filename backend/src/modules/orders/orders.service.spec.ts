@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartService } from '../cart/cart.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { StockService } from '../stock/stock.service';
 import { Role } from '../users/entities/role.enum';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -21,6 +22,8 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
     userId: 'user-1',
     status: OrderStatus.PENDENTE,
     subtotal: '100.00',
+    couponCode: null,
+    discountAmount: '0.00',
     total: '100.00',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -45,6 +48,9 @@ describe('OrdersService', () => {
   let cartService: jest.Mocked<Pick<CartService, 'getSummary' | 'clear'>>;
   let stockService: jest.Mocked<
     Pick<StockService, 'findByProduct' | 'stockOut' | 'stockIn'>
+  >;
+  let couponsService: jest.Mocked<
+    Pick<CouponsService, 'validateForOrder' | 'registerUsage'>
   >;
 
   beforeEach(async () => {
@@ -74,6 +80,10 @@ describe('OrdersService', () => {
       stockOut: jest.fn(),
       stockIn: jest.fn(),
     };
+    couponsService = {
+      validateForOrder: jest.fn(),
+      registerUsage: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -89,6 +99,7 @@ describe('OrdersService', () => {
         },
         { provide: CartService, useValue: cartService },
         { provide: StockService, useValue: stockService },
+        { provide: CouponsService, useValue: couponsService },
       ],
     }).compile();
 
@@ -175,6 +186,55 @@ describe('OrdersService', () => {
       );
       expect(cartService.clear).toHaveBeenCalledWith('user-1');
       expect(order.status).toBe(OrderStatus.PENDENTE);
+    });
+
+    it('applies a coupon discount and registers usage', async () => {
+      cartService.getSummary.mockResolvedValue({
+        cartId: 'cart-1',
+        items: [
+          {
+            productId: 'product-1',
+            name: 'Chanel N°5',
+            quantity: 2,
+            unitPrice: 100,
+            lineTotal: 200,
+          },
+        ],
+        itemCount: 2,
+        subtotal: 200,
+      });
+      stockService.findByProduct.mockResolvedValue({
+        id: 'stock-1',
+        productId: 'product-1',
+        quantity: 10,
+        reservedQuantity: 0,
+        minQuantity: 0,
+        updatedAt: new Date(),
+      });
+      couponsService.validateForOrder.mockResolvedValue({
+        coupon: {
+          id: 'coupon-1',
+          code: 'BEMVINDO10',
+        } as never,
+        discountAmount: 20,
+      });
+      ordersRepository.findOne.mockResolvedValue(buildOrder());
+      orderItemsRepository.find.mockResolvedValue([]);
+
+      await service.checkout('user-1', { couponCode: 'bemvindo10' });
+
+      expect(couponsService.validateForOrder).toHaveBeenCalledWith(
+        'bemvindo10',
+        200,
+      );
+      expect(ordersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          couponCode: 'BEMVINDO10',
+          discountAmount: '20.00',
+          total: '180.00',
+        }) as unknown,
+      );
+      expect(couponsService.registerUsage).toHaveBeenCalledWith('coupon-1');
     });
   });
 

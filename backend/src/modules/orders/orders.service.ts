@@ -7,9 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartService } from '../cart/cart.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { StockService } from '../stock/stock.service';
 import { Role } from '../users/entities/role.enum';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 import { FindOrdersDto } from './dto/find-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -53,9 +55,13 @@ export class OrdersService {
     private readonly orderHistoryRepository: Repository<OrderStatusHistory>,
     private readonly cartService: CartService,
     private readonly stockService: StockService,
+    private readonly couponsService: CouponsService,
   ) {}
 
-  async checkout(userId: string): Promise<OrderWithItems> {
+  async checkout(
+    userId: string,
+    dto: CheckoutDto = {},
+  ): Promise<OrderWithItems> {
     const cart = await this.cartService.getSummary(userId);
     if (cart.items.length === 0) {
       throw new BadRequestException('Carrinho vazio');
@@ -71,11 +77,28 @@ export class OrdersService {
       }
     }
 
+    let discountAmount = 0;
+    let couponCode: string | null = null;
+    let couponId: string | null = null;
+    if (dto.couponCode) {
+      const result = await this.couponsService.validateForOrder(
+        dto.couponCode,
+        cart.subtotal,
+      );
+      discountAmount = result.discountAmount;
+      couponCode = result.coupon.code;
+      couponId = result.coupon.id;
+    }
+
+    const total = Math.round((cart.subtotal - discountAmount) * 100) / 100;
+
     const order = this.ordersRepository.create({
       userId,
       status: OrderStatus.PENDENTE,
       subtotal: cart.subtotal.toFixed(2),
-      total: cart.subtotal.toFixed(2),
+      couponCode,
+      discountAmount: discountAmount.toFixed(2),
+      total: total.toFixed(2),
     });
     await this.ordersRepository.save(order);
 
@@ -99,6 +122,10 @@ export class OrdersService {
 
     await this.recordHistory(order.id, OrderStatus.PENDENTE, null);
     await this.cartService.clear(userId);
+
+    if (couponId) {
+      await this.couponsService.registerUsage(couponId);
+    }
 
     return this.getOrderWithItems(order.id);
   }

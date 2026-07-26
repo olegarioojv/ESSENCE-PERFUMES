@@ -24,6 +24,12 @@ export class Order {
   @Column({ type: 'numeric', precision: 10, scale: 2 })
   subtotal: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  couponCode: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
+  discountAmount: string;
+
   @Column({ type: 'numeric', precision: 10, scale: 2 })
   total: string;
 
