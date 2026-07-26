@@ -8,7 +8,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -29,6 +29,8 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @ApiOperation({ summary: 'Registrar novo usuário' })
+  @ApiResponse({ status: 201, description: 'Usuário registrado com sucesso' })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -36,6 +38,8 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
+  @ApiOperation({ summary: 'Autenticar usuário e gerar tokens de acesso' })
+  @ApiResponse({ status: 200, description: 'Login realizado com sucesso' })
   login(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.login(dto, {
       ipAddress: request.ip ?? null,
@@ -43,7 +47,10 @@ export class AuthController {
     });
   }
 
+  @ApiBearerAuth()
   @Get('login-history')
+  @ApiOperation({ summary: 'Listar histórico de logins do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Histórico de logins' })
   getLoginHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: LoginHistoryQueryDto,
@@ -54,12 +61,17 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
+  @ApiOperation({ summary: 'Renovar tokens de acesso usando refresh token' })
+  @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
+  @ApiOperation({ summary: 'Encerrar sessão do usuário autenticado' })
+  @ApiResponse({ status: 204, description: 'Logout realizado com sucesso' })
   async logout(@CurrentUser() user: JwtPayload, @Body() dto: RefreshTokenDto) {
     await this.authService.logout(user.sub, dto.refreshToken);
   }
@@ -67,6 +79,8 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicitar redefinição de senha' })
+  @ApiResponse({ status: 200, description: 'Solicitação de redefinição enviada' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }
@@ -74,12 +88,17 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('reset-password')
+  @ApiOperation({ summary: 'Redefinir senha com token de recuperação' })
+  @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
   }
 
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('change-password')
+  @ApiOperation({ summary: 'Alterar senha do usuário autenticado' })
+  @ApiResponse({ status: 204, description: 'Senha alterada com sucesso' })
   async changePassword(
     @CurrentUser() user: JwtPayload,
     @Body() dto: ChangePasswordDto,

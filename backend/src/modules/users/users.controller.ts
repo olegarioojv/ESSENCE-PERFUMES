@@ -16,7 +16,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -27,6 +33,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './entities/role.enum';
+import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
 const AVATAR_ALLOWED_MIME_TYPES = /^image\/(jpeg|png|webp)$/;
@@ -41,12 +48,18 @@ export class UsersController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  @ApiBearerAuth()
   @Get('me')
+  @ApiOperation({ summary: 'Buscar perfil do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil do usuário', type: User })
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.usersService.findById(user.sub);
   }
 
+  @ApiBearerAuth()
   @Patch('me')
+  @ApiOperation({ summary: 'Atualizar perfil do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil atualizado', type: User })
   updateProfile(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateProfileDto,
@@ -54,8 +67,12 @@ export class UsersController {
     return this.usersService.updateProfile(user.sub, dto);
   }
 
+  @ApiBearerAuth()
   @Post('me/avatar')
   @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Enviar avatar do usuário autenticado' })
+  @ApiResponse({ status: 201, description: 'Avatar atualizado', type: User })
   async uploadAvatar(
     @CurrentUser() user: JwtPayload,
     @UploadedFile(
@@ -76,29 +93,42 @@ export class UsersController {
     return this.usersService.updateAvatar(user.sub, url);
   }
 
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Delete('me/avatar')
+  @ApiOperation({ summary: 'Remover avatar do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Avatar removido', type: User })
   removeAvatar(@CurrentUser() user: JwtPayload) {
     return this.usersService.updateAvatar(user.sub, null);
   }
 
+  @ApiBearerAuth()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Get()
+  @ApiOperation({ summary: 'Listar todos os usuários (admin)' })
+  @ApiResponse({ status: 200, description: 'Lista de usuários', type: [User] })
   findAll() {
     return this.usersService.findAll();
   }
 
+  @ApiBearerAuth()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Get(':id')
+  @ApiOperation({ summary: 'Buscar usuário pelo id (admin)' })
+  @ApiResponse({ status: 200, description: 'Usuário encontrado', type: User })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   findOne(@Param('id') id: string) {
     return this.usersService.findById(id);
   }
 
+  @ApiBearerAuth()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Post()
+  @ApiOperation({ summary: 'Criar usuário (admin)' })
+  @ApiResponse({ status: 201, description: 'Usuário criado', type: User })
   async create(@CurrentUser() actor: JwtPayload, @Body() dto: CreateUserDto) {
     const user = await this.usersService.createByAdmin(dto);
     await this.auditLogsService.record({
@@ -111,9 +141,13 @@ export class UsersController {
     return user;
   }
 
+  @ApiBearerAuth()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Patch(':id')
+  @ApiOperation({ summary: 'Atualizar usuário (admin)' })
+  @ApiResponse({ status: 200, description: 'Usuário atualizado', type: User })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   async update(
     @CurrentUser() actor: JwtPayload,
     @Param('id') id: string,
@@ -130,10 +164,14 @@ export class UsersController {
     return user;
   }
 
+  @ApiBearerAuth()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
+  @ApiOperation({ summary: 'Remover usuário (admin)' })
+  @ApiResponse({ status: 204, description: 'Usuário removido' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   async remove(@CurrentUser() actor: JwtPayload, @Param('id') id: string) {
     await this.usersService.softDelete(id);
     await this.auditLogsService.record({
