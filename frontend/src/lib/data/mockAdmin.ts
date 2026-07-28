@@ -157,6 +157,47 @@ export const adminProducts: AdminProduct[] = uniqueProducts.map((product, index)
   status: "ativo",
 }));
 
+// ---------------------------------------------------------------------------
+// Estoque
+// ---------------------------------------------------------------------------
+
+export interface StockItem {
+  productSlug: string;
+  name: string;
+  sku: string;
+  currentStock: number;
+  minStock: number;
+  status: "ok" | "baixo" | "esgotado";
+  lastRestock: string;
+}
+
+function stockStatus(current: number, min: number): StockItem["status"] {
+  if (current <= 0) return "esgotado";
+  if (current <= min) return "baixo";
+  return "ok";
+}
+
+const stockOverrides: Record<string, number> = {
+  "essence-vetiver": 5,
+  "essence-aura": 0,
+};
+
+export const stockItems: StockItem[] = adminProducts.map((product, index) => {
+  const currentStock = stockOverrides[product.slug] ?? product.stock;
+  const minStock = 15;
+  return {
+    productSlug: product.slug,
+    name: product.name,
+    sku: product.sku,
+    currentStock,
+    minStock,
+    status: stockStatus(currentStock, minStock),
+    lastRestock: ["2026-05-20", "2026-05-18", "2026-05-24", "2026-05-15", "2026-05-10", "2026-05-22", "2026-05-05"][
+      index
+    ] ?? "2026-05-01",
+  };
+});
+
 export const adminAlerts: AdminAlert[] = [
   { id: "stock", kind: "stock", title: "Estoque baixo", description: "12 produtos com estoque baixo" },
   { id: "orders", kind: "order", title: "Pedidos pendentes", description: "22 pedidos aguardando processamento" },
