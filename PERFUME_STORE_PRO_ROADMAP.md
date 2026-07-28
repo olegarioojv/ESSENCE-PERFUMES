@@ -347,12 +347,12 @@ contra banco real.
 
 # Fase 18 --- Integração
 
--   [ ] Consumir APIs
--   [ ] Login
--   [ ] Produtos
--   [ ] Carrinho
--   [ ] Checkout
--   [ ] Dashboard
+-   [x] Consumir APIs
+-   [x] Login
+-   [x] Produtos
+-   [x] Carrinho
+-   [x] Checkout
+-   [x] Dashboard
 
 ------------------------------------------------------------------------
 
