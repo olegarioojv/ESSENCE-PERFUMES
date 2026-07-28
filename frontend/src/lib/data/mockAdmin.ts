@@ -261,6 +261,32 @@ export interface Customer {
   status: "ativo" | "inativo";
 }
 
+// ---------------------------------------------------------------------------
+// Cupons
+// ---------------------------------------------------------------------------
+
+export interface Coupon {
+  code: string;
+  type: "percentual" | "fixo";
+  value: number;
+  minOrder?: number;
+  usageLimit: number;
+  usageCount: number;
+  expiresAt: string;
+  status: "ativo" | "agendado" | "expirado";
+}
+
+export const mockCoupons: Coupon[] = [
+  { code: "BEMVINDO10", type: "percentual", value: 10, minOrder: 100, usageLimit: 500, usageCount: 312, expiresAt: "2026-12-31", status: "ativo" },
+  { code: "FRETEGRATIS", type: "fixo", value: 19.9, minOrder: 150, usageLimit: 200, usageCount: 87, expiresAt: "2026-08-31", status: "ativo" },
+  { code: "VERAO25", type: "percentual", value: 25, minOrder: 200, usageLimit: 100, usageCount: 100, expiresAt: "2026-06-30", status: "expirado" },
+  { code: "ESSENCE50", type: "fixo", value: 50, minOrder: 300, usageLimit: 80, usageCount: 34, expiresAt: "2026-09-15", status: "ativo" },
+  { code: "PRIMAVERA15", type: "percentual", value: 15, usageLimit: 300, usageCount: 0, expiresAt: "2026-09-01", status: "agendado" },
+  { code: "BLACKFRIDAY30", type: "percentual", value: 30, minOrder: 250, usageLimit: 1000, usageCount: 0, expiresAt: "2026-11-29", status: "agendado" },
+  { code: "ANIVERSARIO20", type: "percentual", value: 20, usageLimit: 150, usageCount: 150, expiresAt: "2026-05-01", status: "expirado" },
+  { code: "VIP100", type: "fixo", value: 100, minOrder: 500, usageLimit: 50, usageCount: 12, expiresAt: "2026-10-31", status: "ativo" },
+];
+
 export const mockCustomers: Customer[] = customerPool.map((name, index) => {
   const isLoggedInUser = name === mockUser.name;
   const ordersForCustomer = allAdminOrders.filter((order) => order.customer === name);
