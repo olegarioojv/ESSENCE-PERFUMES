@@ -304,13 +304,17 @@ export default function ProductDetail({
   const gallery = [product.image, product.image, product.image].filter(Boolean) as string[];
 
   function handleAddToCart() {
-    addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 });
+    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+      () => {},
+    );
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
 
-  function handleBuyNow() {
-    addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 });
+  async function handleBuyNow() {
+    await addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+      () => {},
+    );
     router.push("/checkout");
   }
 

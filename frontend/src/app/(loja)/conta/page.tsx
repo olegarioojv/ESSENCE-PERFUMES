@@ -629,7 +629,12 @@ export default function ContaPage() {
                     type="button"
                     aria-label={`Add ${product.name} to bag`}
                     onClick={() =>
-                      addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 })
+                      addItem({
+                        productId: product.id ?? product.slug,
+                        name: product.name,
+                        price: product.price,
+                        quantity: 1,
+                      }).catch(() => {})
                     }
                   >
                     <BagIcon />

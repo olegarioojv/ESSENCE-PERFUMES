@@ -1,10 +1,12 @@
 import { create } from "zustand";
+import { apiClient } from "@/lib/api/client";
 
 /**
- * Example Zustand store for the shopping cart. This is a functional
- * placeholder for Fase 17 scaffolding: real cart logic (syncing with the
- * backend `/cart` endpoints, persistence, totals, etc.) lands with the
- * actual Carrinho page / Fase 18 integration work.
+ * Cart is server-side (no anonymous/guest cart in the backend — every
+ * `/cart` route requires a bearer token), so this store is a thin client
+ * over GET/POST/PATCH/DELETE `/cart*`, not a local reducer. Every mutation
+ * re-syncs `items`/`subtotal` from the API's response rather than guessing
+ * the new state locally, so it never drifts from what's actually persisted.
  */
 
 export interface CartItem {
@@ -14,50 +16,73 @@ export interface CartItem {
   quantity: number;
 }
 
+interface CartSummaryResponse {
+  cartId: string;
+  items: { productId: string; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  itemCount: number;
+  subtotal: number;
+}
+
+function toCartItems(summary: CartSummaryResponse): CartItem[] {
+  return summary.items.map((item) => ({
+    productId: item.productId,
+    name: item.name,
+    price: item.unitPrice,
+    quantity: item.quantity,
+  }));
+}
+
 interface CartState {
   items: CartItem[];
-  addItem: (item: CartItem) => void;
-  removeItem: (productId: string) => void;
-  setQuantity: (productId: string, quantity: number) => void;
-  clear: () => void;
+  loading: boolean;
+  fetchCart: () => Promise<void>;
+  addItem: (item: CartItem) => Promise<void>;
+  removeItem: (productId: string) => Promise<void>;
+  setQuantity: (productId: string, quantity: number) => Promise<void>;
+  clear: () => Promise<void>;
   totalItems: () => number;
   totalPrice: () => number;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  loading: false,
 
-  addItem: (item) =>
-    set((state) => {
-      const existing = state.items.find((i) => i.productId === item.productId);
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.productId === item.productId
-              ? { ...i, quantity: i.quantity + item.quantity }
-              : i
-          ),
-        };
-      }
-      return { items: [...state.items, item] };
-    }),
+  fetchCart: async () => {
+    set({ loading: true });
+    try {
+      const { data } = await apiClient.get<CartSummaryResponse>("/cart");
+      set({ items: toCartItems(data) });
+    } finally {
+      set({ loading: false });
+    }
+  },
 
-  removeItem: (productId) =>
-    set((state) => ({
-      items: state.items.filter((i) => i.productId !== productId),
-    })),
+  addItem: async (item) => {
+    const { data } = await apiClient.post<CartSummaryResponse>("/cart/items", {
+      productId: item.productId,
+      quantity: item.quantity,
+    });
+    set({ items: toCartItems(data) });
+  },
 
-  setQuantity: (productId, quantity) =>
-    set((state) => ({
-      items: state.items.map((i) =>
-        i.productId === productId ? { ...i, quantity } : i
-      ),
-    })),
+  removeItem: async (productId) => {
+    const { data } = await apiClient.delete<CartSummaryResponse>(`/cart/items/${productId}`);
+    set({ items: toCartItems(data) });
+  },
 
-  clear: () => set({ items: [] }),
+  setQuantity: async (productId, quantity) => {
+    const { data } = await apiClient.patch<CartSummaryResponse>(`/cart/items/${productId}`, { quantity });
+    set({ items: toCartItems(data) });
+  },
+
+  clear: async () => {
+    const { items } = get();
+    await Promise.all(items.map((item) => apiClient.delete(`/cart/items/${item.productId}`)));
+    set({ items: [] });
+  },
 
   totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
-  totalPrice: () =>
-    get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+  totalPrice: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
 }));

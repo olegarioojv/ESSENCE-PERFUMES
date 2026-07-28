@@ -127,7 +127,9 @@ export default function Collection() {
   }, []);
 
   function handleAdd(product: HomeProduct) {
-    addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 });
+    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+      () => {},
+    );
     setAddedSlug(product.slug);
     setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
   }

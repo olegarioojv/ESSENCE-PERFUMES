@@ -86,6 +86,7 @@ export async function toHomeProduct(product: ApiProduct): Promise<HomeProduct> {
   const volumeMl = product.volumeMl ? Number(product.volumeMl) : 100;
 
   return {
+    id: product.id,
     slug: product.slug,
     name: product.name,
     description: product.description ?? undefined,

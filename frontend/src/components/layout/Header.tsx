@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { SearchIcon, AccountIcon, CartIcon, MenuIcon, CloseIcon } from "@/components/icons/Icons";
 
 const Bar = styled.header`
@@ -96,8 +97,8 @@ const MobileNavLink = styled(Link)`
 const Logo = styled(Link)`
   position: relative;
   display: block;
-  width: 130px;
-  height: 44px;
+  width: 190px;
+  height: 64px;
   flex-shrink: 0;
 `;
 
@@ -148,7 +149,16 @@ const navItems = [
 
 export default function Header() {
   const totalItems = useCartStore((state) => state.totalItems());
+  const fetchCart = useCartStore((state) => state.fetchCart);
+  const user = useAuthStore((state) => state.user);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (hasHydrated && user) {
+      fetchCart().catch(() => {});
+    }
+  }, [hasHydrated, user, fetchCart]);
 
   return (
     <Bar>
@@ -177,8 +187,8 @@ export default function Header() {
           src="/logo.png"
           alt="Essence Perfumes"
           fill
-          sizes="130px"
-          style={{ objectFit: "cover", objectPosition: "center" }}
+          sizes="190px"
+          style={{ objectFit: "contain", objectPosition: "center" }}
         />
       </Logo>
 

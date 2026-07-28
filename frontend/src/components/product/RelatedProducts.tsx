@@ -93,7 +93,11 @@ export default function RelatedProducts({
               <Add
                 type="button"
                 aria-label={`Add ${item.name} to bag`}
-                onClick={() => addItem({ productId: item.slug, name: item.name, price: item.price, quantity: 1 })}
+                onClick={() =>
+                  addItem({ productId: item.id ?? item.slug, name: item.name, price: item.price, quantity: 1 }).catch(
+                    () => {},
+                  )
+                }
               >
                 <BagIcon />
               </Add>

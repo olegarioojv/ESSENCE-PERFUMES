@@ -5,7 +5,6 @@ import styled from "styled-components";
 import ProductSwatch from "@/components/product/ProductSwatch";
 import { useCartStore } from "@/lib/store/useCartStore";
 import { cartItemCount, cartSubtotal, formatPrice, shippingCost } from "@/lib/cart";
-import { findProductBySlug } from "@/lib/data/mockProducts";
 
 const Wrap = styled.aside`
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -120,28 +119,18 @@ export default function OrderSummary({
 
       {showItems && items.length > 0 && (
         <ItemsList>
-          {items.map((item) => {
-            const product = findProductBySlug(item.productId);
-            return (
-              <ItemRow key={item.productId}>
-                <Thumb>
-                  <ProductSwatch
-                    from={product?.swatch[0] ?? "#EFE6D6"}
-                    to={product?.swatch[1] ?? "#C7B48F"}
-                    image={product?.image}
-                    alt={item.name}
-                  />
-                </Thumb>
-                <ItemInfo>
-                  <h3>{item.name.toUpperCase()}</h3>
-                  <p>
-                    {product?.concentration ?? "Eau de Parfum"} · Qty: {item.quantity}
-                  </p>
-                </ItemInfo>
-                <ItemPrice>{formatPrice(item.price * item.quantity)}</ItemPrice>
-              </ItemRow>
-            );
-          })}
+          {items.map((item) => (
+            <ItemRow key={item.productId}>
+              <Thumb>
+                <ProductSwatch from="#EFE6D6" to="#C7B48F" alt={item.name} />
+              </Thumb>
+              <ItemInfo>
+                <h3>{item.name.toUpperCase()}</h3>
+                <p>Qty: {item.quantity}</p>
+              </ItemInfo>
+              <ItemPrice>{formatPrice(item.price * item.quantity)}</ItemPrice>
+            </ItemRow>
+          ))}
         </ItemsList>
       )}
 

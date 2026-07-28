@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import Breadcrumb from "@/components/layout/Breadcrumb";
@@ -9,7 +10,8 @@ import OrderSummary from "@/components/cart/OrderSummary";
 import QuantityStepper from "@/components/cart/QuantityStepper";
 import { ArrowRightIcon, CloseIcon, ShieldIcon, TruckIcon } from "@/components/icons/Icons";
 import { useCartStore } from "@/lib/store/useCartStore";
-import { findProductBySlug, relatedProducts } from "@/lib/data/mockProducts";
+import { fetchProducts } from "@/lib/api/products";
+import type { HomeProduct } from "@/lib/data/mockProducts";
 import { amountToFreeShipping, cartSubtotal, formatPrice, FREE_SHIPPING_THRESHOLD } from "@/lib/cart";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 
@@ -289,9 +291,20 @@ const EmptyState = styled.div`
 export default function CarrinhoPage() {
   const ready = useRequireAuth();
   const items = useCartStore((state) => state.items);
+  const fetchCart = useCartStore((state) => state.fetchCart);
   const setQuantity = useCartStore((state) => state.setQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
+  const [catalog, setCatalog] = useState<HomeProduct[]>([]);
+
+  useEffect(() => {
+    if (!ready) return;
+    fetchCart().catch(() => {});
+    fetchProducts().then(setCatalog);
+  }, [ready, fetchCart]);
+
+  const catalogById = new Map(catalog.map((product) => [product.id, product]));
+  const related = catalog.filter((product) => !items.some((item) => item.productId === product.id)).slice(0, 4);
 
   const subtotal = cartSubtotal(items);
   const remaining = amountToFreeShipping(subtotal);
@@ -341,7 +354,7 @@ export default function CarrinhoPage() {
             </TableHead>
 
             {items.map((item) => {
-              const product = findProductBySlug(item.productId);
+              const product = catalogById.get(item.productId);
               return (
                 <Row key={item.productId}>
                   <Product>
@@ -415,7 +428,7 @@ export default function CarrinhoPage() {
         </Layout>
       )}
 
-      <RelatedProducts title="You May Also Like" products={relatedProducts(items[0]?.productId ?? "")} />
+      <RelatedProducts title="You May Also Like" products={related} />
     </Wrap>
   );
 }
