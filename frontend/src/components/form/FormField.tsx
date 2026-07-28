@@ -43,6 +43,21 @@ export const Select = styled.select<{ $invalid?: boolean }>`
   color: ${({ theme }) => theme.colors.ink};
 `;
 
+export const CheckboxRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.ink};
+  cursor: pointer;
+`;
+
+export const Checkbox = styled.input.attrs({ type: "checkbox" })`
+  width: 16px;
+  height: 16px;
+  accent-color: ${({ theme }) => theme.colors.gold};
+`;
+
 const ErrorText = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.xs};
   color: ${({ theme }) => theme.colors.danger};

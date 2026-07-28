@@ -5,6 +5,7 @@
  */
 
 import { allProducts, mockUser, type HomeProduct } from "./mockProducts";
+import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING } from "../cart";
 
 const uniqueProducts: HomeProduct[] = Array.from(
   new Map(allProducts.map((product) => [product.slug, product])).values(),
@@ -301,3 +302,30 @@ export const mockCustomers: Customer[] = customerPool.map((name, index) => {
     status: index === 8 ? "inativo" : "ativo",
   };
 });
+
+// ---------------------------------------------------------------------------
+// Configurações
+// ---------------------------------------------------------------------------
+
+export const mockStoreSettings = {
+  storeName: "Essence Perfumes",
+  supportEmail: "contato@essenceperfumes.com",
+  supportPhone: "(35) 99999-9999",
+  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+  standardShipping: STANDARD_SHIPPING,
+  paymentMethods: { cartao: true, pix: true, boleto: false },
+  notifications: { novoPedido: true, estoqueBaixo: true, novaAvaliacao: false },
+};
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "Administrador" | "Editor" | "Suporte";
+}
+
+export const mockAdminUsers: AdminUser[] = [
+  { id: "USR-001", name: mockUser.name, email: mockUser.email, role: "Administrador" },
+  { id: "USR-002", name: "Camila Ferreira", email: "camila.ferreira@essenceperfumes.com", role: "Editor" },
+  { id: "USR-003", name: "Bruno Santos", email: "bruno.santos@essenceperfumes.com", role: "Suporte" },
+];
