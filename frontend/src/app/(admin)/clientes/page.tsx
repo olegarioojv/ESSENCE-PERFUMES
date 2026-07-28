@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import AdminHeader from "@/components/admin/AdminHeader";
 import StatCard from "@/components/admin/StatCard";
@@ -11,8 +11,15 @@ import Button from "@/components/form/Button";
 import { Input, Select } from "@/components/form/FormField";
 import Modal from "@/components/ui/Modal";
 import { EyeIcon, ReceiptIcon, UsersIcon } from "@/components/icons/Icons";
-import { allAdminOrders, mockCustomers, orderStatusMeta, type Customer } from "@/lib/data/mockAdmin";
+import { orderStatusMeta } from "@/lib/data/mockAdmin";
 import { formatDateBR, formatPriceBRL } from "@/lib/format";
+import {
+  fetchCustomerOrders,
+  fetchCustomers,
+  parseApiError,
+  type Customer,
+  type CustomerOrder,
+} from "@/lib/api/customers";
 
 const StatGrid = styled.div`
   display: grid;
@@ -74,6 +81,12 @@ const ProfileHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
 function initials(name: string): string {
   return name
     .split(" ")
@@ -86,16 +99,38 @@ function initials(name: string): string {
 export default function ClientesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
-  const stats = useMemo(() => {
-    const total = mockCustomers.length;
-    const active = mockCustomers.filter((c) => c.status === "ativo").length;
-    const avgSpent = mockCustomers.reduce((sum, c) => sum + c.totalSpent, 0) / (total || 1);
-    return { total, active, avgSpent };
+  useEffect(() => {
+    fetchCustomers()
+      .then(setCustomers)
+      .catch((error) => setLoadError(parseApiError(error, "Não foi possível carregar os clientes.")));
   }, []);
 
-  const filtered = mockCustomers.filter((customer) => {
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setCustomerOrders([]);
+      return;
+    }
+    setOrdersLoading(true);
+    fetchCustomerOrders(selectedCustomer.id)
+      .then(setCustomerOrders)
+      .catch(() => setCustomerOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, [selectedCustomer]);
+
+  const stats = useMemo(() => {
+    const total = customers.length;
+    const active = customers.filter((c) => c.status === "ativo").length;
+    const avgSpent = customers.reduce((sum, c) => sum + c.totalSpent, 0) / (total || 1);
+    return { total, active, avgSpent };
+  }, [customers]);
+
+  const filtered = customers.filter((customer) => {
     const query = search.toLowerCase();
     const matchesSearch =
       customer.name.toLowerCase().includes(query) || customer.email.toLowerCase().includes(query);
@@ -103,19 +138,17 @@ export default function ClientesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const customerOrders = selectedCustomer
-    ? allAdminOrders.filter((order) => order.customer === selectedCustomer.name)
-    : [];
-
   return (
     <>
       <AdminHeader title="Clientes" subtitle="Veja e gerencie os clientes da loja." />
+
+      {loadError && <ErrorText>{loadError}</ErrorText>}
 
       <StatGrid>
         <StatCard icon={<UsersIcon />} label="Total de Clientes" value={String(stats.total)} />
         <StatCard icon={<UsersIcon />} label="Clientes Ativos" value={String(stats.active)} />
         <StatCard icon={<ReceiptIcon />} label="Ticket Médio" value={formatPriceBRL(stats.avgSpent)} />
-        <StatCard icon={<UsersIcon />} label="Novos este mês" value="4" />
+        <StatCard icon={<UsersIcon />} label="Novos este mês" value={String(stats.total)} />
       </StatGrid>
 
       <Panel>
@@ -137,9 +170,8 @@ export default function ClientesPage() {
         </FilterBar>
 
         <Table>
-          <TableHeadRow $columns="2fr 1.3fr 1fr 1.2fr 1fr 1fr 0.6fr">
+          <TableHeadRow $columns="2fr 1fr 1.2fr 1fr 1fr 0.6fr">
             <HeadCell>Cliente</HeadCell>
-            <HeadCell>Telefone</HeadCell>
             <HeadCell>Pedidos</HeadCell>
             <HeadCell>Total gasto</HeadCell>
             <HeadCell>Cliente desde</HeadCell>
@@ -147,7 +179,7 @@ export default function ClientesPage() {
             <HeadCell>Perfil</HeadCell>
           </TableHeadRow>
           {filtered.map((customer) => (
-            <Row key={customer.id} $columns="2fr 1.3fr 1fr 1.2fr 1fr 1fr 0.6fr">
+            <Row key={customer.id} $columns="2fr 1fr 1.2fr 1fr 1fr 0.6fr">
               <Cell>
                 <NameCell>
                   <Avatar>{initials(customer.name)}</Avatar>
@@ -157,7 +189,6 @@ export default function ClientesPage() {
                   </NameInfo>
                 </NameCell>
               </Cell>
-              <Cell>{customer.phone}</Cell>
               <Cell>{customer.ordersCount}</Cell>
               <Cell>{formatPriceBRL(customer.totalSpent)}</Cell>
               <Cell>{formatDateBR(customer.since)}</Cell>
@@ -197,23 +228,29 @@ export default function ClientesPage() {
                 <HeadCell>Status</HeadCell>
                 <HeadCell>Total</HeadCell>
               </TableHeadRow>
-              {customerOrders.length === 0 && (
+              {ordersLoading && (
+                <Row $columns="1fr">
+                  <Cell>Carregando pedidos...</Cell>
+                </Row>
+              )}
+              {!ordersLoading && customerOrders.length === 0 && (
                 <Row $columns="1fr">
                   <Cell>Nenhum pedido encontrado.</Cell>
                 </Row>
               )}
-              {customerOrders.map((order) => (
-                <Row key={order.id} $columns="1fr 1fr 1fr 1fr">
-                  <Cell>{order.id}</Cell>
-                  <Cell>{formatDateBR(order.date)}</Cell>
-                  <Cell>
-                    <StatusBadge $tone={orderStatusMeta[order.status].tone}>
-                      {orderStatusMeta[order.status].label}
-                    </StatusBadge>
-                  </Cell>
-                  <Cell>{formatPriceBRL(order.total)}</Cell>
-                </Row>
-              ))}
+              {!ordersLoading &&
+                customerOrders.map((order) => (
+                  <Row key={order.id} $columns="1fr 1fr 1fr 1fr">
+                    <Cell>{order.id}</Cell>
+                    <Cell>{formatDateBR(order.date)}</Cell>
+                    <Cell>
+                      <StatusBadge $tone={orderStatusMeta[order.status].tone}>
+                        {orderStatusMeta[order.status].label}
+                      </StatusBadge>
+                    </Cell>
+                    <Cell>{formatPriceBRL(order.total)}</Cell>
+                  </Row>
+                ))}
             </Table>
           </>
         )}
