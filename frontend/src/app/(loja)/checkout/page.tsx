@@ -7,9 +7,12 @@ import OrderSummary from "@/components/cart/OrderSummary";
 import TrustBar from "@/components/home/TrustBar";
 import FormField, { Input, Select } from "@/components/form/FormField";
 import { ArrowRightIcon, CraftIcon, LeafIcon, ShieldIcon, StarIcon, TruckIcon } from "@/components/icons/Icons";
-import { checkoutDeliverySchema } from "@/lib/validations/checkoutSchema";
+import { useRouter } from "next/navigation";
+import { checkoutDeliverySchema, type CheckoutDeliveryValues } from "@/lib/validations/checkoutSchema";
 import { STANDARD_SHIPPING, formatPrice } from "@/lib/cart";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { apiClient, parseApiError } from "@/lib/api/client";
+import { useCartStore } from "@/lib/store/useCartStore";
 
 const Wrap = styled.div`
   max-width: 1280px;
@@ -256,22 +259,52 @@ const FormFeedback = styled.p`
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
+const ErrorFeedback = styled.p`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.danger};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const Confirmation = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.xxl} 0;
+
+  h2 {
+    font-size: ${({ theme }) => theme.fontSizes.xl};
+    margin-bottom: ${({ theme }) => theme.spacing.sm};
+  }
+
+  p {
+    color: ${({ theme }) => theme.colors.muted};
+  }
+`;
+
 const deliveryMethods = [
   { id: "standard", title: "Standard Shipping", detail: "Estimated 5 to 7 business days", price: 0 },
   { id: "express", title: "Express Shipping", detail: "Estimated 2 to 3 business days", price: STANDARD_SHIPPING },
   { id: "pickup", title: "Pickup in Store", detail: "Pick up at one of our stores", price: 0 },
 ] as const;
 
+interface OrderConfirmation {
+  id: string;
+  total: number;
+}
+
 export default function CheckoutPage() {
   const ready = useRequireAuth();
+  const router = useRouter();
+  const items = useCartStore((state) => state.items);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [order, setOrder] = useState<OrderConfirmation | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<(typeof deliveryMethods)[number]["id"]>("standard");
   const [sameBilling, setSameBilling] = useState(true);
   const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const result = checkoutDeliverySchema.safeParse(Object.fromEntries(formData.entries()));
@@ -282,20 +315,78 @@ export default function CheckoutPage() {
         fieldErrors[String(issue.path[0])] = issue.message;
       }
       setErrors(fieldErrors);
-      setSubmitted(false);
       return;
     }
 
     setErrors({});
-    setSubmitted(true);
-    // Real submission (POST /orders via apiClient) lands in Fase 18.
+    setApiError(null);
+    setSubmitting(true);
+    try {
+      await saveAddress(result.data);
+      const { data } = await apiClient.post<{ id: string; total: string | number }>("/orders/checkout", {
+        couponCode: appliedCoupon || undefined,
+      });
+      setOrder({ id: data.id, total: Number(data.total) });
+      useCartStore.setState({ items: [] });
+    } catch (error) {
+      setApiError(parseApiError(error, "Não foi possível finalizar o pedido."));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function saveAddress(delivery: CheckoutDeliveryValues) {
+    await apiClient.post("/addresses", {
+      label: "Entrega",
+      recipientName: delivery.fullName,
+      phone: delivery.phone,
+      zipCode: delivery.cep,
+      street: delivery.address,
+      number: delivery.number,
+      complement: delivery.complement || undefined,
+      neighborhood: delivery.neighborhood,
+      city: delivery.city,
+      state: delivery.state,
+    });
   }
 
   function handleApplyCoupon() {
-    setCouponMessage(coupon.trim() ? "Invalid or expired coupon." : "Enter a coupon code.");
+    if (!coupon.trim()) {
+      setCouponMessage("Enter a coupon code.");
+      return;
+    }
+    setAppliedCoupon(coupon.trim());
+    setCouponMessage("Coupon will be applied when you place the order.");
   }
 
   if (!ready) return null;
+
+  if (order) {
+    return (
+      <Wrap>
+        <Confirmation>
+          <h2>Order placed successfully!</h2>
+          <p>
+            Order #{order.id.slice(0, 8)} — Total: {formatPrice(order.total)}
+          </p>
+          <ContinueButton type="button" style={{ maxWidth: 280, margin: "2rem auto 0" }} onClick={() => router.push("/conta")}>
+            View My Orders
+          </ContinueButton>
+        </Confirmation>
+      </Wrap>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <Wrap>
+        <Confirmation>
+          <h2>Your cart is empty</h2>
+          <p>Add some fragrances before checking out.</p>
+        </Confirmation>
+      </Wrap>
+    );
+  }
 
   return (
     <Wrap>
@@ -435,12 +526,10 @@ export default function CheckoutPage() {
           </CouponRow>
           {couponMessage && <FormFeedback role="status">{couponMessage}</FormFeedback>}
 
-          {submitted && (
-            <FormFeedback role="status">Details validated (real integration lands in Fase 18).</FormFeedback>
-          )}
+          {apiError && <ErrorFeedback role="alert">{apiError}</ErrorFeedback>}
 
-          <ContinueButton type="submit">
-            Continue to Payment
+          <ContinueButton type="submit" disabled={submitting}>
+            {submitting ? "Placing order..." : "Place Order"}
             <ArrowRightIcon />
           </ContinueButton>
           <SecureNote>
