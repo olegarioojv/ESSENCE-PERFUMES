@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import AdminFooterBar from "@/components/admin/AdminFooterBar";
 import PageTransition from "@/components/motion/PageTransition";
 
 /**
@@ -13,6 +14,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <AdminSidebar />
       <div style={{ flex: 1, padding: "2rem" }}>
         <PageTransition>{children}</PageTransition>
+        <AdminFooterBar />
       </div>
     </div>
   );

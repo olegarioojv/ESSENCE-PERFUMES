@@ -270,3 +270,22 @@ export function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function DollarIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 6.5c0-1.9-2.2-3-5-3s-5 1.3-5 3 2.2 3 5 3 5 1.1 5 3-2.2 3-5 3-5-1.1-5-3" />
+    </svg>
+  );
+}
+
+export function AlertTriangleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+      <path d="M12 3.5 22 20H2Z" />
+      <line x1="12" y1="9.5" x2="12" y2="14" />
+      <circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
