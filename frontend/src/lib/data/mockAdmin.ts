@@ -203,3 +203,45 @@ export const adminAlerts: AdminAlert[] = [
   { id: "orders", kind: "order", title: "Pedidos pendentes", description: "22 pedidos aguardando processamento" },
   { id: "reviews", kind: "review", title: "Avaliações pendentes", description: "8 avaliações aguardando aprovação" },
 ];
+
+// ---------------------------------------------------------------------------
+// Pedidos
+// ---------------------------------------------------------------------------
+
+export interface AdminOrderDetail extends AdminOrder {
+  items: number;
+  paymentMethod: string;
+  address: string;
+}
+
+const customerPool = [
+  "Mariana Silva",
+  "Lucas Oliveira",
+  "Juliana Costa",
+  "Rafael Almeida",
+  "Fernanda Souza",
+  "João Victor",
+  "Camila Ferreira",
+  "Bruno Santos",
+  "Patrícia Lima",
+  "Diego Martins",
+];
+
+const statusCycle: AdminOrderStatus[] = ["entregue", "transito", "processando", "cancelado", "estornado"];
+const paymentMethods = ["Cartão de crédito", "Pix", "Boleto"];
+
+export const allAdminOrders: AdminOrderDetail[] = Array.from({ length: 18 }, (_, index) => {
+  const customer = customerPool[index % customerPool.length];
+  const status = statusCycle[index % statusCycle.length];
+  const day = 28 - index;
+  return {
+    id: `#124${58 - index}`,
+    customer,
+    date: `2026-05-${String(Math.max(day, 1)).padStart(2, "0")}`,
+    status,
+    total: 249.9 + (index % 6) * 130.5,
+    items: 1 + (index % 4),
+    paymentMethod: paymentMethods[index % paymentMethods.length],
+    address: `Rua das Flores, ${100 + index} — Extrema, MG`,
+  };
+});
