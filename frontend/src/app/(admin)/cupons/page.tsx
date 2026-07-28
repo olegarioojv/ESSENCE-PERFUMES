@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import styled from "styled-components";
 import AdminHeader from "@/components/admin/AdminHeader";
 import StatCard from "@/components/admin/StatCard";
@@ -11,8 +11,17 @@ import Button from "@/components/form/Button";
 import FormField, { Input, Select } from "@/components/form/FormField";
 import Modal from "@/components/ui/Modal";
 import { EditIcon, PlusIcon, TagIcon, TrashIcon } from "@/components/icons/Icons";
-import { mockCoupons, type Coupon } from "@/lib/data/mockAdmin";
 import { formatDateBR, formatPriceBRL } from "@/lib/format";
+import {
+  createCoupon,
+  deleteCoupon,
+  fetchCoupons,
+  parseApiError,
+  updateCoupon,
+  type Coupon,
+  type CouponStatus,
+  type CouponType,
+} from "@/lib/api/coupons";
 
 const StatGrid = styled.div`
   display: grid;
@@ -69,7 +78,13 @@ const FormActions = styled.div`
   margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
-const statusMeta: Record<Coupon["status"], { label: string; tone: "success" | "gold" | "danger" }> = {
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const statusMeta: Record<CouponStatus, { label: string; tone: "success" | "gold" | "danger" }> = {
   ativo: { label: "Ativo", tone: "success" },
   agendado: { label: "Agendado", tone: "gold" },
   expirado: { label: "Expirado", tone: "danger" },
@@ -77,79 +92,106 @@ const statusMeta: Record<Coupon["status"], { label: string; tone: "success" | "g
 
 const emptyForm = {
   code: "",
-  type: "percentual" as Coupon["type"],
+  type: "percentual" as CouponType,
   value: "",
-  minOrder: "",
   usageLimit: "",
   expiresAt: "",
 };
 
 export default function CuponsPage() {
-  const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function loadCoupons() {
+    fetchCoupons()
+      .then(setCoupons)
+      .catch((error) => setLoadError(parseApiError(error, "Não foi possível carregar os cupons.")));
+  }
+
+  useEffect(() => {
+    loadCoupons();
+  }, []);
 
   const stats = useMemo(() => {
     const active = coupons.filter((c) => c.status === "ativo").length;
-    const totalUses = coupons.reduce((sum, c) => sum + c.usageCount, 0);
+    const totalUses = coupons.reduce((sum, c) => sum + c.usedCount, 0);
     const expired = coupons.filter((c) => c.status === "expirado").length;
     const discountGranted = coupons.reduce(
-      (sum, c) => sum + (c.type === "fixo" ? c.value * c.usageCount : 0),
+      (sum, c) => sum + (c.type === "valor_fixo" ? c.value * c.usedCount : 0),
       0,
     );
     return { active, totalUses, expired, discountGranted };
   }, [coupons]);
 
   function openNew() {
-    setEditingCode(null);
+    setEditingCoupon(null);
     setForm(emptyForm);
+    setFormError(null);
     setModalOpen(true);
   }
 
   function openEdit(coupon: Coupon) {
-    setEditingCode(coupon.code);
+    setEditingCoupon(coupon);
     setForm({
       code: coupon.code,
       type: coupon.type,
       value: String(coupon.value),
-      minOrder: coupon.minOrder ? String(coupon.minOrder) : "",
-      usageLimit: String(coupon.usageLimit),
-      expiresAt: coupon.expiresAt,
+      usageLimit: coupon.maxUses != null ? String(coupon.maxUses) : "",
+      expiresAt: coupon.expiresAt ? coupon.expiresAt.slice(0, 10) : "",
     });
+    setFormError(null);
     setModalOpen(true);
   }
 
-  function handleDelete(code: string) {
-    if (!window.confirm(`Excluir o cupom ${code}?`)) return;
-    setCoupons((current) => current.filter((c) => c.code !== code));
+  async function handleDelete(coupon: Coupon) {
+    if (!window.confirm(`Excluir o cupom ${coupon.code}?`)) return;
+    try {
+      await deleteCoupon(coupon.id);
+      setCoupons((current) => current.filter((c) => c.id !== coupon.id));
+    } catch (error) {
+      window.alert(parseApiError(error, "Não foi possível excluir o cupom."));
+    }
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const payload: Coupon = {
+    setFormError(null);
+    setSaving(true);
+
+    const payload = {
       code: form.code.toUpperCase(),
       type: form.type,
       value: Number(form.value) || 0,
-      minOrder: form.minOrder ? Number(form.minOrder) : undefined,
-      usageLimit: Number(form.usageLimit) || 0,
-      usageCount: editingCode ? coupons.find((c) => c.code === editingCode)?.usageCount ?? 0 : 0,
-      expiresAt: form.expiresAt,
-      status: "ativo",
+      maxUses: form.usageLimit ? Number(form.usageLimit) : undefined,
+      expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
     };
 
-    setCoupons((current) => {
-      if (editingCode) {
-        return current.map((c) => (c.code === editingCode ? payload : c));
+    try {
+      if (editingCoupon) {
+        const updated = await updateCoupon(editingCoupon.id, payload);
+        setCoupons((current) => current.map((c) => (c.id === updated.id ? updated : c)));
+      } else {
+        const created = await createCoupon(payload);
+        setCoupons((current) => [created, ...current]);
       }
-      return [payload, ...current];
-    });
-    setModalOpen(false);
+      setModalOpen(false);
+    } catch (error) {
+      setFormError(parseApiError(error, "Não foi possível salvar o cupom."));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <>
       <AdminHeader title="Cupons" subtitle="Gerencie os cupons de desconto da loja." />
+
+      {loadError && <ErrorText>{loadError}</ErrorText>}
 
       <StatGrid>
         <StatCard icon={<TagIcon />} label="Cupons Ativos" value={String(stats.active)} />
@@ -176,17 +218,22 @@ export default function CuponsPage() {
             <HeadCell>Status</HeadCell>
             <HeadCell>Ações</HeadCell>
           </TableHeadRow>
+          {coupons.length === 0 && !loadError && (
+            <Row $columns="1fr">
+              <Cell>Nenhum cupom cadastrado.</Cell>
+            </Row>
+          )}
           {coupons.map((coupon) => (
-            <Row key={coupon.code} $columns="1.3fr 1fr 1fr 1fr 1fr 1fr 0.7fr">
+            <Row key={coupon.id} $columns="1.3fr 1fr 1fr 1fr 1fr 1fr 0.7fr">
               <Cell>
                 <Code>{coupon.code}</Code>
               </Cell>
               <Cell>{coupon.type === "percentual" ? "Percentual" : "Valor fixo"}</Cell>
               <Cell>{coupon.type === "percentual" ? `${coupon.value}%` : formatPriceBRL(coupon.value)}</Cell>
               <Cell>
-                {coupon.usageCount}/{coupon.usageLimit}
+                {coupon.usedCount}/{coupon.maxUses ?? "∞"}
               </Cell>
-              <Cell>{formatDateBR(coupon.expiresAt)}</Cell>
+              <Cell>{coupon.expiresAt ? formatDateBR(coupon.expiresAt) : "—"}</Cell>
               <Cell>
                 <StatusBadge $tone={statusMeta[coupon.status].tone}>{statusMeta[coupon.status].label}</StatusBadge>
               </Cell>
@@ -195,7 +242,7 @@ export default function CuponsPage() {
                   <button type="button" aria-label="Editar" onClick={() => openEdit(coupon)}>
                     <EditIcon />
                   </button>
-                  <button type="button" aria-label="Excluir" onClick={() => handleDelete(coupon.code)}>
+                  <button type="button" aria-label="Excluir" onClick={() => handleDelete(coupon)}>
                     <TrashIcon />
                   </button>
                 </Actions>
@@ -208,13 +255,16 @@ export default function CuponsPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingCode ? "Editar Cupom" : "Novo Cupom"}
+        title={editingCoupon ? "Editar Cupom" : "Novo Cupom"}
       >
         <Form onSubmit={handleSubmit}>
+          {formError && <ErrorText>{formError}</ErrorText>}
           <FormField label="Código" htmlFor="code">
             <Input
               id="code"
               required
+              pattern="[A-Za-z0-9-]+"
+              title="Apenas letras, números e hífens"
               value={form.code}
               onChange={(event) => setForm((f) => ({ ...f, code: event.target.value }))}
             />
@@ -224,10 +274,10 @@ export default function CuponsPage() {
               <Select
                 id="type"
                 value={form.type}
-                onChange={(event) => setForm((f) => ({ ...f, type: event.target.value as Coupon["type"] }))}
+                onChange={(event) => setForm((f) => ({ ...f, type: event.target.value as CouponType }))}
               >
                 <option value="percentual">Percentual</option>
-                <option value="fixo">Valor fixo</option>
+                <option value="valor_fixo">Valor fixo</option>
               </Select>
             </FormField>
             <FormField label="Valor" htmlFor="value">
@@ -242,38 +292,30 @@ export default function CuponsPage() {
             </FormField>
           </FormRow>
           <FormRow>
-            <FormField label="Pedido mínimo (R$)" htmlFor="minOrder">
-              <Input
-                id="minOrder"
-                type="number"
-                value={form.minOrder}
-                onChange={(event) => setForm((f) => ({ ...f, minOrder: event.target.value }))}
-              />
-            </FormField>
             <FormField label="Limite de uso" htmlFor="usageLimit">
               <Input
                 id="usageLimit"
                 type="number"
-                required
                 value={form.usageLimit}
                 onChange={(event) => setForm((f) => ({ ...f, usageLimit: event.target.value }))}
               />
             </FormField>
+            <FormField label="Validade" htmlFor="expiresAt">
+              <Input
+                id="expiresAt"
+                type="date"
+                value={form.expiresAt}
+                onChange={(event) => setForm((f) => ({ ...f, expiresAt: event.target.value }))}
+              />
+            </FormField>
           </FormRow>
-          <FormField label="Validade" htmlFor="expiresAt">
-            <Input
-              id="expiresAt"
-              type="date"
-              required
-              value={form.expiresAt}
-              onChange={(event) => setForm((f) => ({ ...f, expiresAt: event.target.value }))}
-            />
-          </FormField>
           <FormActions>
             <Button type="button" $variant="secondary" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar Cupom</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Salvando..." : "Salvar Cupom"}
+            </Button>
           </FormActions>
         </Form>
       </Modal>
