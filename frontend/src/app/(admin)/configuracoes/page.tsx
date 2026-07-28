@@ -6,11 +6,17 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import { Panel } from "@/components/admin/Panel";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import Button from "@/components/form/Button";
-import FormField, { Checkbox, CheckboxRow, Input, Select } from "@/components/form/FormField";
+import FormField, { Checkbox, CheckboxRow, Input } from "@/components/form/FormField";
 import Modal from "@/components/ui/Modal";
 import { PlusIcon } from "@/components/icons/Icons";
-import { mockAdminUsers, mockStoreSettings, type AdminUser } from "@/lib/data/mockAdmin";
+import { mockStoreSettings } from "@/lib/data/mockAdmin";
 import { formatPriceBRL } from "@/lib/format";
+import {
+  createAdminUser,
+  fetchAdminUsers,
+  parseApiError,
+  type ApiUser,
+} from "@/lib/api/adminUsers";
 
 const Layout = styled.div`
   display: grid;
@@ -107,9 +113,14 @@ type TabId = (typeof tabs)[number]["id"];
 export default function ConfiguracoesPage() {
   const [activeTab, setActiveTab] = useState<TabId>("geral");
   const [settings, setSettings] = useState(mockStoreSettings);
-  const [users, setUsers] = useState<AdminUser[]>(mockAdminUsers);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: "", role: "Editor" as AdminUser["role"] });
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "" });
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [tempPasswordMessage, setTempPasswordMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -118,23 +129,52 @@ export default function ConfiguracoesPage() {
     return () => clearTimeout(timeout);
   }, [saved]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setUsersLoading(true);
+    setUsersError(null);
+    fetchAdminUsers()
+      .then((data) => {
+        if (!cancelled) setUsers(data);
+      })
+      .catch((error) => {
+        if (!cancelled) setUsersError(parseApiError(error, "Não foi possível carregar os usuários."));
+      })
+      .finally(() => {
+        if (!cancelled) setUsersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function handleSave() {
     setSaved(true);
   }
 
-  function handleInvite(event: FormEvent) {
+  function openInvite() {
+    setInviteError(null);
+    setTempPasswordMessage(null);
+    setInviteOpen(true);
+  }
+
+  async function handleInvite(event: FormEvent) {
     event.preventDefault();
-    setUsers((current) => [
-      ...current,
-      {
-        id: `USR-${String(current.length + 1).padStart(3, "0")}`,
-        name: inviteForm.email.split("@")[0],
-        email: inviteForm.email,
-        role: inviteForm.role,
-      },
-    ]);
-    setInviteForm({ email: "", role: "Editor" });
-    setInviteOpen(false);
+    setInviteSubmitting(true);
+    setInviteError(null);
+    try {
+      const { user, temporaryPassword } = await createAdminUser(inviteForm);
+      setUsers((current) => [...current, user]);
+      setInviteForm({ name: "", email: "" });
+      setInviteOpen(false);
+      setTempPasswordMessage(
+        `Usuário "${user.name}" criado com sucesso. Senha temporária: ${temporaryPassword}`,
+      );
+    } catch (error) {
+      setInviteError(parseApiError(error, "Não foi possível criar o usuário."));
+    } finally {
+      setInviteSubmitting(false);
+    }
   }
 
   return (
@@ -296,19 +336,24 @@ export default function ConfiguracoesPage() {
               <div>
                 <UsersHeader>
                   <strong>Usuários do painel</strong>
-                  <Button type="button" onClick={() => setInviteOpen(true)}>
+                  <Button type="button" onClick={openInvite}>
                     <PlusIcon /> Convidar usuário
                   </Button>
                 </UsersHeader>
-                {users.map((user) => (
-                  <UserRow key={user.id}>
-                    <UserInfo>
-                      <strong>{user.name}</strong>
-                      <span>{user.email}</span>
-                    </UserInfo>
-                    <StatusBadge $tone="gold">{user.role}</StatusBadge>
-                  </UserRow>
-                ))}
+                {tempPasswordMessage && <SavedMessage>{tempPasswordMessage}</SavedMessage>}
+                {usersLoading && <span>Carregando usuários...</span>}
+                {usersError && !usersLoading && <span>{usersError}</span>}
+                {!usersLoading &&
+                  !usersError &&
+                  users.map((user) => (
+                    <UserRow key={user.id}>
+                      <UserInfo>
+                        <strong>{user.name}</strong>
+                        <span>{user.email}</span>
+                      </UserInfo>
+                      <StatusBadge $tone="gold">Administrador</StatusBadge>
+                    </UserRow>
+                  ))}
               </div>
             )}
 
@@ -325,6 +370,15 @@ export default function ConfiguracoesPage() {
       <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Convidar usuário">
         <form onSubmit={handleInvite}>
           <FieldGroup>
+            <FormField label="Nome" htmlFor="inviteName">
+              <Input
+                id="inviteName"
+                required
+                minLength={2}
+                value={inviteForm.name}
+                onChange={(event) => setInviteForm((f) => ({ ...f, name: event.target.value }))}
+              />
+            </FormField>
             <FormField label="E-mail" htmlFor="inviteEmail">
               <Input
                 id="inviteEmail"
@@ -334,24 +388,19 @@ export default function ConfiguracoesPage() {
                 onChange={(event) => setInviteForm((f) => ({ ...f, email: event.target.value }))}
               />
             </FormField>
-            <FormField label="Função" htmlFor="inviteRole">
-              <Select
-                id="inviteRole"
-                value={inviteForm.role}
-                onChange={(event) =>
-                  setInviteForm((f) => ({ ...f, role: event.target.value as AdminUser["role"] }))
-                }
-              >
-                <option value="Administrador">Administrador</option>
-                <option value="Editor">Editor</option>
-                <option value="Suporte">Suporte</option>
-              </Select>
-            </FormField>
+            <span>
+              Este painel ainda não possui um fluxo de convite por e-mail: o usuário é criado
+              imediatamente com acesso de administrador e uma senha temporária, exibida a você
+              após a criação.
+            </span>
+            {inviteError && <SavedMessage>{inviteError}</SavedMessage>}
             <SaveBar>
               <Button type="button" $variant="secondary" onClick={() => setInviteOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Enviar convite</Button>
+              <Button type="submit" disabled={inviteSubmitting}>
+                {inviteSubmitting ? "Criando..." : "Criar usuário"}
+              </Button>
             </SaveBar>
           </FieldGroup>
         </form>
