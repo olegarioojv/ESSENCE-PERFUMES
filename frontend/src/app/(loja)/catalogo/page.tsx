@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import Breadcrumb from "@/components/layout/Breadcrumb";
@@ -8,7 +8,8 @@ import ProductSwatch from "@/components/product/ProductSwatch";
 import { BagIcon, CheckIcon } from "@/components/icons/Icons";
 import { useCartStore } from "@/lib/store/useCartStore";
 import { formatPrice } from "@/lib/cart";
-import { allProducts, type HomeProduct } from "@/lib/data/mockProducts";
+import { fetchProducts } from "@/lib/api/products";
+import type { HomeProduct } from "@/lib/data/mockProducts";
 
 const Wrap = styled.div`
   max-width: 1280px;
@@ -172,19 +173,27 @@ function sortProducts(products: HomeProduct[], sort: SortOption): HomeProduct[] 
 
 export default function CatalogoPage() {
   const addItem = useCartStore((state) => state.addItem);
+  const [products, setProducts] = useState<HomeProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFamily, setActiveFamily] = useState<string | null>(null);
   const [sort, setSort] = useState<SortOption>("featured");
   const [addedSlug, setAddedSlug] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchProducts()
+      .then(setProducts)
+      .finally(() => setLoading(false));
+  }, []);
+
   const families = useMemo(
-    () => Array.from(new Set(allProducts.map((product) => product.family).filter(Boolean))) as string[],
-    []
+    () => Array.from(new Set(products.map((product) => product.family).filter(Boolean))) as string[],
+    [products],
   );
 
   const filtered = useMemo(() => {
-    const base = activeFamily ? allProducts.filter((product) => product.family === activeFamily) : allProducts;
+    const base = activeFamily ? products.filter((product) => product.family === activeFamily) : products;
     return sortProducts(base, sort);
-  }, [activeFamily, sort]);
+  }, [products, activeFamily, sort]);
 
   function handleAdd(product: HomeProduct) {
     addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 });
@@ -231,7 +240,9 @@ export default function CatalogoPage() {
         {filtered.length} {filtered.length === 1 ? "fragrance" : "fragrances"}
       </ResultCount>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <EmptyState>Loading...</EmptyState>
+      ) : filtered.length === 0 ? (
         <EmptyState>No fragrances match this filter.</EmptyState>
       ) : (
         <Grid>

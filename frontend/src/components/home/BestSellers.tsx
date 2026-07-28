@@ -1,10 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import ProductSwatch from "@/components/product/ProductSwatch";
 import { StarIcon } from "@/components/icons/Icons";
-import { bestSellers } from "@/lib/data/mockProducts";
+import { fetchProducts } from "@/lib/api/products";
+import type { HomeProduct } from "@/lib/data/mockProducts";
+
+const BEST_SELLER_SLUGS = ["essence-legacy", "essence-midnight", "essence-vetiver", "essence-aura"];
+const BEST_SELLER_RATINGS: Record<string, { rating: number; reviewCount: number }> = {
+  "essence-legacy": { rating: 5, reviewCount: 142 },
+  "essence-midnight": { rating: 5, reviewCount: 118 },
+  "essence-vetiver": { rating: 4, reviewCount: 68 },
+  "essence-aura": { rating: 5, reviewCount: 52 },
+};
 
 const Wrap = styled.section`
   padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.xl};
@@ -80,6 +90,21 @@ const ExploreLink = styled(Link)`
 `;
 
 export default function BestSellers() {
+  const [bestSellers, setBestSellers] = useState<HomeProduct[]>([]);
+
+  useEffect(() => {
+    fetchProducts().then((products) => {
+      const bySlug = new Map(products.map((product) => [product.slug, product]));
+      setBestSellers(
+        BEST_SELLER_SLUGS.map((slug) => {
+          const product = bySlug.get(slug);
+          if (!product) return undefined;
+          return { ...product, ...BEST_SELLER_RATINGS[slug] };
+        }).filter(Boolean) as HomeProduct[],
+      );
+    });
+  }, []);
+
   return (
     <Wrap>
       <Title>Best Sellers</Title>

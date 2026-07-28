@@ -1,5 +1,22 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
+
+/**
+ * `useAuthStore.ts` has no "use client" pragma of its own, so it also gets
+ * evaluated when a Server Component transitively imports it (e.g. via
+ * `apiClient` → `lib/api/products.ts`). `localStorage` doesn't exist in
+ * that context, so persist's default storage must be swapped for a no-op
+ * there instead of crashing the render.
+ */
+const noopStorage: StateStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
+const browserSafeStorage = createJSONStorage(() =>
+  typeof window !== "undefined" ? window.localStorage : noopStorage,
+);
 
 export type UserRole = "admin" | "cliente";
 
@@ -44,6 +61,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "essence-auth",
+      storage: browserSafeStorage,
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

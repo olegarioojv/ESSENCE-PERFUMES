@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import ProductSwatch from "@/components/product/ProductSwatch";
 import { BagIcon, CheckIcon } from "@/components/icons/Icons";
-import { essenceCollection } from "@/lib/data/mockProducts";
+import { fetchProducts } from "@/lib/api/products";
+import type { HomeProduct } from "@/lib/data/mockProducts";
 import { useCartStore } from "@/lib/store/useCartStore";
+
+const COLLECTION_SLUGS = ["essence-legacy", "essence-botanical", "essence-rose"];
 
 const Wrap = styled.section`
   padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.xl};
@@ -113,9 +116,17 @@ const ViewAll = styled(Link)`
 
 export default function Collection() {
   const addItem = useCartStore((state) => state.addItem);
+  const [essenceCollection, setEssenceCollection] = useState<HomeProduct[]>([]);
   const [addedSlug, setAddedSlug] = useState<string | null>(null);
 
-  function handleAdd(product: (typeof essenceCollection)[number]) {
+  useEffect(() => {
+    fetchProducts().then((products) => {
+      const bySlug = new Map(products.map((product) => [product.slug, product]));
+      setEssenceCollection(COLLECTION_SLUGS.map((slug) => bySlug.get(slug)).filter(Boolean) as HomeProduct[]);
+    });
+  }, []);
+
+  function handleAdd(product: HomeProduct) {
     addItem({ productId: product.slug, name: product.name, price: product.price, quantity: 1 });
     setAddedSlug(product.slug);
     setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
