@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import styled from "styled-components";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { Panel, PanelHeader, PanelTitle } from "@/components/admin/Panel";
@@ -11,7 +11,17 @@ import FormField, { Input, Select } from "@/components/form/FormField";
 import Textarea from "@/components/form/Textarea";
 import Modal from "@/components/ui/Modal";
 import { EditIcon, PlusIcon, TrashIcon } from "@/components/icons/Icons";
-import { adminProducts, type AdminProduct } from "@/lib/data/mockAdmin";
+import {
+  fetchAdminProducts,
+  fetchCategories,
+  fetchBrands,
+  createProduct,
+  deleteProduct,
+  parseApiError,
+  type AdminProduct,
+  type Category,
+  type Brand,
+} from "@/lib/api/adminProducts";
 import { formatPriceBRL } from "@/lib/format";
 
 const FilterBar = styled.div`
@@ -77,58 +87,117 @@ const FormActions = styled.div`
   margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
-const statusOptions: AdminProduct["status"][] = ["ativo", "inativo"];
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  margin: 0 0 ${({ theme }) => theme.spacing.md};
+`;
+
+const EmptyState = styled.p`
+  color: ${({ theme }) => theme.colors.muted};
+  padding: ${({ theme }) => theme.spacing.lg} 0;
+  text-align: center;
+`;
+
+const statusOptions: Array<"ativo" | "inativo"> = ["ativo", "inativo"];
 
 const emptyForm = {
   name: "",
   sku: "",
-  collection: "",
+  categoryId: "",
+  brandId: "",
   description: "",
   price: "",
-  stock: "",
+  volumeMl: "",
 };
 
 export default function ProdutosPage() {
-  const [products, setProducts] = useState<AdminProduct[]>(adminProducts);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [collectionFilter, setCollectionFilter] = useState("todas");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [productList, categoryList, brandList] = await Promise.all([
+        fetchAdminProducts(),
+        fetchCategories(),
+        fetchBrands(),
+      ]);
+      setProducts(productList);
+      setCategories(categoryList);
+      setBrands(brandList);
+    } catch (err) {
+      setError(parseApiError(err, "Não foi possível carregar os produtos."));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const collections = useMemo(
-    () => Array.from(new Set(products.map((product) => product.collection).filter(Boolean))) as string[],
+    () => Array.from(new Set(products.map((product) => product.categoryName).filter(Boolean))) as string[],
     [products],
   );
 
   const filtered = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCollection = collectionFilter === "todas" || product.collection === collectionFilter;
-    const matchesStatus = statusFilter === "todos" || product.status === statusFilter;
+    const matchesCollection = collectionFilter === "todas" || product.categoryName === collectionFilter;
+    const status = product.isActive ? "ativo" : "inativo";
+    const matchesStatus = statusFilter === "todos" || status === statusFilter;
     return matchesSearch && matchesCollection && matchesStatus;
   });
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const newProduct: AdminProduct = {
-      slug: `essence-${form.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
-      name: form.name,
-      description: form.description,
-      price: Number(form.price) || 0,
-      volumeMl: 100,
-      swatch: ["#D9B98C", "#8A6A3B"],
-      collection: form.collection,
-      sku: form.sku || `ESS-${Date.now()}`,
-      stock: Number(form.stock) || 0,
-      status: "ativo",
-    };
-    setProducts((current) => [newProduct, ...current]);
-    setForm(emptyForm);
-    setModalOpen(false);
+    setFormError(null);
+    if (!form.categoryId || !form.brandId) {
+      setFormError("Selecione uma coleção e uma marca.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await createProduct({
+        name: form.name,
+        sku: form.sku || `ESS-${Date.now()}`,
+        description: form.description || undefined,
+        price: Number(form.price) || 0,
+        brandId: form.brandId,
+        categoryId: form.categoryId,
+        volumeMl: form.volumeMl ? Number(form.volumeMl) : undefined,
+        isActive: true,
+      });
+      setForm(emptyForm);
+      setModalOpen(false);
+      await loadData();
+    } catch (err) {
+      setFormError(parseApiError(err, "Não foi possível criar o produto."));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function handleDelete(slug: string) {
-    setProducts((current) => current.filter((product) => product.slug !== slug));
+  async function handleDelete(id: string) {
+    if (!window.confirm("Excluir este produto?")) return;
+    try {
+      await deleteProduct(id);
+      setProducts((current) => current.filter((product) => product.id !== id));
+    } catch (err) {
+      setError(parseApiError(err, "Não foi possível excluir o produto."));
+    }
   }
 
   return (
@@ -167,50 +236,57 @@ export default function ProdutosPage() {
           </Select>
         </FilterBar>
 
-        <Table>
-          <TableHeadRow $columns="2.5fr 1fr 1.5fr 1fr 1fr 1fr 0.7fr">
-            <HeadCell>Produto</HeadCell>
-            <HeadCell>SKU</HeadCell>
-            <HeadCell>Coleção</HeadCell>
-            <HeadCell>Preço</HeadCell>
-            <HeadCell>Estoque</HeadCell>
-            <HeadCell>Status</HeadCell>
-            <HeadCell>Ações</HeadCell>
-          </TableHeadRow>
-          {filtered.map((product) => (
-            <Row key={product.slug} $columns="2.5fr 1fr 1.5fr 1fr 1fr 1fr 0.7fr">
-              <Cell>
-                <NameCell>
-                  <Swatch $from={product.swatch[0]} $to={product.swatch[1]} />
-                  {product.name}
-                </NameCell>
-              </Cell>
-              <Cell>{product.sku}</Cell>
-              <Cell>{product.collection}</Cell>
-              <Cell>{formatPriceBRL(product.price)}</Cell>
-              <Cell>{product.stock}</Cell>
-              <Cell>
-                <StatusBadge $tone={product.status === "ativo" ? "success" : "pale"}>
-                  {product.status === "ativo" ? "Ativo" : "Inativo"}
-                </StatusBadge>
-              </Cell>
-              <Cell>
-                <Actions>
-                  <button type="button" aria-label="Editar">
-                    <EditIcon />
-                  </button>
-                  <button type="button" aria-label="Excluir" onClick={() => handleDelete(product.slug)}>
-                    <TrashIcon />
-                  </button>
-                </Actions>
-              </Cell>
-            </Row>
-          ))}
-        </Table>
+        {error && <ErrorText role="alert">{error}</ErrorText>}
+
+        {loading ? (
+          <EmptyState>Carregando produtos...</EmptyState>
+        ) : filtered.length === 0 ? (
+          <EmptyState>Nenhum produto encontrado.</EmptyState>
+        ) : (
+          <Table>
+            <TableHeadRow $columns="2.5fr 1fr 1.5fr 1fr 1fr 0.7fr">
+              <HeadCell>Produto</HeadCell>
+              <HeadCell>SKU</HeadCell>
+              <HeadCell>Coleção</HeadCell>
+              <HeadCell>Preço</HeadCell>
+              <HeadCell>Status</HeadCell>
+              <HeadCell>Ações</HeadCell>
+            </TableHeadRow>
+            {filtered.map((product) => (
+              <Row key={product.id} $columns="2.5fr 1fr 1.5fr 1fr 1fr 0.7fr">
+                <Cell>
+                  <NameCell>
+                    <Swatch $from={product.swatch[0]} $to={product.swatch[1]} />
+                    {product.name}
+                  </NameCell>
+                </Cell>
+                <Cell>{product.sku}</Cell>
+                <Cell>{product.categoryName ?? "—"}</Cell>
+                <Cell>{formatPriceBRL(product.price)}</Cell>
+                <Cell>
+                  <StatusBadge $tone={product.isActive ? "success" : "pale"}>
+                    {product.isActive ? "Ativo" : "Inativo"}
+                  </StatusBadge>
+                </Cell>
+                <Cell>
+                  <Actions>
+                    <button type="button" aria-label="Editar">
+                      <EditIcon />
+                    </button>
+                    <button type="button" aria-label="Excluir" onClick={() => handleDelete(product.id)}>
+                      <TrashIcon />
+                    </button>
+                  </Actions>
+                </Cell>
+              </Row>
+            ))}
+          </Table>
+        )}
       </Panel>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Produto">
         <Form onSubmit={handleSubmit}>
+          {formError && <ErrorText role="alert">{formError}</ErrorText>}
           <FormField label="Nome" htmlFor="name">
             <Input
               id="name"
@@ -237,13 +313,12 @@ export default function ProdutosPage() {
                 onChange={(event) => setForm((f) => ({ ...f, price: event.target.value }))}
               />
             </FormField>
-            <FormField label="Estoque" htmlFor="stock">
+            <FormField label="Volume (ml)" htmlFor="volumeMl">
               <Input
-                id="stock"
+                id="volumeMl"
                 type="number"
-                required
-                value={form.stock}
-                onChange={(event) => setForm((f) => ({ ...f, stock: event.target.value }))}
+                value={form.volumeMl}
+                onChange={(event) => setForm((f) => ({ ...f, volumeMl: event.target.value }))}
               />
             </FormField>
           </FormRow>
@@ -255,19 +330,44 @@ export default function ProdutosPage() {
                 onChange={(event) => setForm((f) => ({ ...f, sku: event.target.value }))}
               />
             </FormField>
-            <FormField label="Coleção" htmlFor="collection">
-              <Input
-                id="collection"
-                value={form.collection}
-                onChange={(event) => setForm((f) => ({ ...f, collection: event.target.value }))}
-              />
+            <FormField label="Marca" htmlFor="brandId">
+              <Select
+                id="brandId"
+                required
+                value={form.brandId}
+                onChange={(event) => setForm((f) => ({ ...f, brandId: event.target.value }))}
+              >
+                <option value="">Selecione...</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </Select>
             </FormField>
           </FormRow>
+          <FormField label="Coleção" htmlFor="categoryId">
+            <Select
+              id="categoryId"
+              required
+              value={form.categoryId}
+              onChange={(event) => setForm((f) => ({ ...f, categoryId: event.target.value }))}
+            >
+              <option value="">Selecione...</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
           <FormActions>
             <Button type="button" $variant="secondary" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar Produto</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Salvando..." : "Salvar Produto"}
+            </Button>
           </FormActions>
         </Form>
       </Modal>
