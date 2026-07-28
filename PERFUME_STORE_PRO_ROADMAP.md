@@ -335,13 +335,13 @@ contra banco real.
 
 ## Painel Administrativo
 
--   [ ] Dashboard
--   [ ] Produtos
--   [ ] Estoque
--   [ ] Pedidos
--   [ ] Clientes
--   [ ] Cupons
--   [ ] Configurações
+-   [x] Dashboard
+-   [x] Produtos
+-   [x] Estoque
+-   [x] Pedidos
+-   [x] Clientes
+-   [x] Cupons
+-   [x] Configurações
 
 ------------------------------------------------------------------------
 
