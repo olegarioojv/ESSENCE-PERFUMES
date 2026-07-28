@@ -4,6 +4,7 @@ import { CartModule } from '../cart/cart.module';
 import { CouponsModule } from '../coupons/coupons.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { StockModule } from '../stock/stock.module';
+import { User } from '../users/entities/user.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
@@ -12,7 +13,7 @@ import { OrdersService } from './orders.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory]),
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, User]),
     CartModule,
     StockModule,
     CouponsModule,

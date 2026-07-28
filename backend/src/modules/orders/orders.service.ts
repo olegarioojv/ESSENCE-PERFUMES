@@ -5,12 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { CartService } from '../cart/cart.service';
 import { CouponsService } from '../coupons/coupons.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StockService } from '../stock/stock.service';
 import { Role } from '../users/entities/role.enum';
+import { User } from '../users/entities/user.entity';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CheckoutDto } from './dto/checkout.dto';
 import { FindOrdersDto } from './dto/find-orders.dto';
@@ -45,6 +46,19 @@ export interface PaginatedOrders {
   totalPages: number;
 }
 
+export interface AdminOrder extends Order {
+  customerName: string | null;
+  customerEmail: string | null;
+}
+
+export interface PaginatedAdminOrders {
+  items: AdminOrder[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -54,6 +68,8 @@ export class OrdersService {
     private readonly orderItemsRepository: Repository<OrderItem>,
     @InjectRepository(OrderStatusHistory)
     private readonly orderHistoryRepository: Repository<OrderStatusHistory>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
     private readonly cartService: CartService,
     private readonly stockService: StockService,
     private readonly couponsService: CouponsService,
@@ -149,6 +165,36 @@ export class OrdersService {
     });
 
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async findAllAdmin(query: FindOrdersDto = {}): Promise<PaginatedAdminOrders> {
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const limit = query.limit && query.limit > 0 ? query.limit : 20;
+
+    const where: FindOptionsWhere<Order> = {};
+    if (query.status) where.status = query.status;
+    if (query.userId) where.userId = query.userId;
+
+    const [items, total] = await this.ordersRepository.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const userIds = [...new Set(items.map((order) => order.userId))];
+    const users = userIds.length
+      ? await this.usersRepository.find({ where: { id: In(userIds) } })
+      : [];
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    const enriched: AdminOrder[] = items.map((order) => ({
+      ...order,
+      customerName: usersById.get(order.userId)?.name ?? null,
+      customerEmail: usersById.get(order.userId)?.email ?? null,
+    }));
+
+    return { items: enriched, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getById(orderId: string): Promise<Order> {

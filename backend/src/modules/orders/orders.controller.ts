@@ -41,6 +41,16 @@ export class OrdersController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin')
+  @ApiOperation({ summary: 'Listar todos os pedidos (admin)' })
+  @ApiResponse({ status: 200, description: 'Lista de pedidos de todos os clientes' })
+  findAllAdmin(@Query() query: FindOrdersDto) {
+    return this.ordersService.findAllAdmin(query);
+  }
+
+  @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({ summary: 'Buscar pedido pelo id' })
   @ApiResponse({ status: 200, description: 'Pedido encontrado', type: Order })
