@@ -56,7 +56,7 @@ const PageInfo = styled.span`
 `;
 
 const PAGE_SIZE = 8;
-const statusOptions: AdminOrderStatus[] = ["entregue", "transito", "processando", "cancelado", "estornado"];
+const statusOptions: AdminOrderStatus[] = ["pendente", "pago", "em_preparacao", "enviado", "entregue", "cancelado"];
 
 export default function PedidosPage() {
   const [search, setSearch] = useState("");

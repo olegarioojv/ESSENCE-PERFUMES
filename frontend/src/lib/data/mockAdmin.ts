@@ -72,14 +72,18 @@ export const revenueSeries: RevenuePoint[] = [
   { date: "31 Mai", current: 33200, previous: 27800 },
 ];
 
-export type AdminOrderStatus = "entregue" | "transito" | "processando" | "cancelado" | "estornado";
+/** Matches the backend's real `OrderStatus` enum
+ * (`backend/src/modules/orders/entities/order-status.enum.ts`) exactly —
+ * these values are used verbatim in API requests/responses. */
+export type AdminOrderStatus = "pendente" | "pago" | "em_preparacao" | "enviado" | "entregue" | "cancelado";
 
 export const orderStatusMeta: Record<AdminOrderStatus, { label: string; tone: BadgeTone }> = {
+  pendente: { label: "Pendente", tone: "tan" },
+  pago: { label: "Pago", tone: "success" },
+  em_preparacao: { label: "Em preparação", tone: "gold" },
+  enviado: { label: "Enviado", tone: "gold" },
   entregue: { label: "Entregue", tone: "success" },
-  transito: { label: "Em trânsito", tone: "gold" },
-  processando: { label: "Processando", tone: "tan" },
-  cancelado: { label: "Cancelado", tone: "pale" },
-  estornado: { label: "Estornado", tone: "brown" },
+  cancelado: { label: "Cancelado", tone: "danger" },
 };
 
 export interface OrderStatusSlice {
@@ -90,10 +94,10 @@ export interface OrderStatusSlice {
 
 export const orderStatusBreakdown: OrderStatusSlice[] = [
   { status: "entregue", count: 78, pct: 51.3 },
-  { status: "transito", count: 34, pct: 22.4 },
-  { status: "processando", count: 22, pct: 14.5 },
+  { status: "enviado", count: 34, pct: 22.4 },
+  { status: "em_preparacao", count: 22, pct: 14.5 },
   { status: "cancelado", count: 10, pct: 6.6 },
-  { status: "estornado", count: 8, pct: 5.2 },
+  { status: "pendente", count: 8, pct: 5.2 },
 ];
 
 export interface AdminOrder {
@@ -106,8 +110,8 @@ export interface AdminOrder {
 
 export const recentAdminOrders: AdminOrder[] = [
   { id: "#12458", customer: "Mariana Silva", date: "2026-05-28", status: "entregue", total: 349.9 },
-  { id: "#12457", customer: "Lucas Oliveira", date: "2026-05-28", status: "transito", total: 699.8 },
-  { id: "#12456", customer: "Juliana Costa", date: "2026-05-27", status: "processando", total: 1049.7 },
+  { id: "#12457", customer: "Lucas Oliveira", date: "2026-05-28", status: "enviado", total: 699.8 },
+  { id: "#12456", customer: "Juliana Costa", date: "2026-05-27", status: "em_preparacao", total: 1049.7 },
   { id: "#12455", customer: "Rafael Almeida", date: "2026-05-27", status: "entregue", total: 349.9 },
   { id: "#12454", customer: "Fernanda Souza", date: "2026-05-26", status: "cancelado", total: 479.8 },
 ];
@@ -228,7 +232,7 @@ const customerPool = [
   "Diego Martins",
 ];
 
-const statusCycle: AdminOrderStatus[] = ["entregue", "transito", "processando", "cancelado", "estornado"];
+const statusCycle: AdminOrderStatus[] = ["entregue", "enviado", "em_preparacao", "cancelado", "pendente"];
 const paymentMethods = ["Cartão de crédito", "Pix", "Boleto"];
 
 export const allAdminOrders: AdminOrderDetail[] = Array.from({ length: 18 }, (_, index) => {
