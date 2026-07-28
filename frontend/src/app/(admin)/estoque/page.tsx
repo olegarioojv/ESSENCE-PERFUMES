@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import AdminHeader from "@/components/admin/AdminHeader";
 import StatCard from "@/components/admin/StatCard";
@@ -9,7 +9,8 @@ import { Table, TableHeadRow, HeadCell, Row, Cell } from "@/components/admin/Adm
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Input, Select } from "@/components/form/FormField";
 import { BoxIcon, PackageIcon, AlertTriangleIcon } from "@/components/icons/Icons";
-import { stockItems as initialStockItems, type StockItem } from "@/lib/data/mockAdmin";
+import { parseApiError } from "@/lib/api/client";
+import { decreaseStock, fetchStockItems, increaseStock, type StockItemView } from "@/lib/api/stock";
 import { formatDateBR } from "@/lib/format";
 
 const StatGrid = styled.div`
@@ -54,18 +55,55 @@ const AdjustButton = styled.button`
     border-color: ${({ theme }) => theme.colors.gold};
     color: ${({ theme }) => theme.colors.gold};
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
-const statusMeta: Record<StockItem["status"], { label: string; tone: "success" | "gold" | "danger" }> = {
+const EmptyState = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg};
+  text-align: center;
+  color: ${({ theme }) => theme.colors.muted};
+`;
+
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.danger};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const statusMeta: Record<StockItemView["status"], { label: string; tone: "success" | "gold" | "danger" }> = {
   ok: { label: "OK", tone: "success" },
   baixo: { label: "Estoque baixo", tone: "gold" },
   esgotado: { label: "Esgotado", tone: "danger" },
 };
 
 export default function EstoquePage() {
-  const [items, setItems] = useState<StockItem[]>(initialStockItems);
+  const [items, setItems] = useState<StockItemView[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    fetchStockItems()
+      .then((data) => {
+        if (!cancelled) setItems(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(parseApiError(err, "Não foi possível carregar o estoque."));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const stats = useMemo(
     () => ({
@@ -82,15 +120,30 @@ export default function EstoquePage() {
     return matchesSearch && matchesStatus;
   });
 
-  function adjustStock(slug: string, delta: number) {
-    setItems((current) =>
-      current.map((item) => {
-        if (item.productSlug !== slug) return item;
-        const currentStock = Math.max(0, item.currentStock + delta);
-        const status: StockItem["status"] = currentStock <= 0 ? "esgotado" : currentStock <= item.minStock ? "baixo" : "ok";
-        return { ...item, currentStock, status };
-      }),
-    );
+  async function adjustStock(productId: string, direction: 1 | -1) {
+    setPendingId(productId);
+    setError(null);
+    try {
+      const updated = direction === 1 ? await increaseStock(productId) : await decreaseStock(productId);
+      setItems((current) =>
+        current.map((item) =>
+          item.productId === productId
+            ? {
+                ...item,
+                currentStock: updated.quantity,
+                minStock: updated.minQuantity,
+                lastRestock: updated.updatedAt,
+                status:
+                  updated.quantity <= 0 ? "esgotado" : updated.quantity <= updated.minQuantity ? "baixo" : "ok",
+              }
+            : item,
+        ),
+      );
+    } catch (err) {
+      setError(parseApiError(err, "Não foi possível atualizar o estoque."));
+    } finally {
+      setPendingId(null);
+    }
   }
 
   return (
@@ -122,6 +175,13 @@ export default function EstoquePage() {
           </Select>
         </FilterBar>
 
+        {error && <ErrorText role="alert">{error}</ErrorText>}
+
+        {isLoading ? (
+          <EmptyState>Carregando estoque...</EmptyState>
+        ) : filtered.length === 0 ? (
+          <EmptyState>Nenhum item encontrado.</EmptyState>
+        ) : (
         <Table>
           <TableHeadRow $columns="2fr 1fr 1fr 1fr 1fr 1.3fr">
             <HeadCell>Produto</HeadCell>
@@ -132,16 +192,26 @@ export default function EstoquePage() {
             <HeadCell>Status</HeadCell>
           </TableHeadRow>
           {filtered.map((item) => (
-            <Row key={item.productSlug} $columns="2fr 1fr 1fr 1fr 1fr 1.3fr">
+            <Row key={item.id} $columns="2fr 1fr 1fr 1fr 1fr 1.3fr">
               <Cell>{item.name}</Cell>
               <Cell>{item.sku}</Cell>
               <Cell>
                 <AdjustRow>
-                  <AdjustButton type="button" onClick={() => adjustStock(item.productSlug, -1)} aria-label="Diminuir">
+                  <AdjustButton
+                    type="button"
+                    onClick={() => adjustStock(item.productId, -1)}
+                    disabled={pendingId === item.productId || item.currentStock <= 0}
+                    aria-label="Diminuir"
+                  >
                     −
                   </AdjustButton>
                   {item.currentStock}
-                  <AdjustButton type="button" onClick={() => adjustStock(item.productSlug, 1)} aria-label="Aumentar">
+                  <AdjustButton
+                    type="button"
+                    onClick={() => adjustStock(item.productId, 1)}
+                    disabled={pendingId === item.productId}
+                    aria-label="Aumentar"
+                  >
                     +
                   </AdjustButton>
                 </AdjustRow>
@@ -154,6 +224,7 @@ export default function EstoquePage() {
             </Row>
           ))}
         </Table>
+        )}
       </Panel>
     </>
   );
