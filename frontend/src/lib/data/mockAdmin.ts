@@ -4,7 +4,7 @@
  * here is local, static data consumed by client components.
  */
 
-import { allProducts, type HomeProduct } from "./mockProducts";
+import { allProducts, mockUser, type HomeProduct } from "./mockProducts";
 
 const uniqueProducts: HomeProduct[] = Array.from(
   new Map(allProducts.map((product) => [product.slug, product])).values(),
@@ -243,5 +243,35 @@ export const allAdminOrders: AdminOrderDetail[] = Array.from({ length: 18 }, (_,
     items: 1 + (index % 4),
     paymentMethod: paymentMethods[index % paymentMethods.length],
     address: `Rua das Flores, ${100 + index} — Extrema, MG`,
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Clientes
+// ---------------------------------------------------------------------------
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  ordersCount: number;
+  totalSpent: number;
+  since: string;
+  status: "ativo" | "inativo";
+}
+
+export const mockCustomers: Customer[] = customerPool.map((name, index) => {
+  const isLoggedInUser = name === mockUser.name;
+  const ordersForCustomer = allAdminOrders.filter((order) => order.customer === name);
+  return {
+    id: `CUST-${String(index + 1).padStart(3, "0")}`,
+    name,
+    email: isLoggedInUser ? mockUser.email : `${name.toLowerCase().replace(/\s+/g, ".")}@email.com`,
+    phone: isLoggedInUser ? mockUser.phone : `(35) 9${8000 + index}-${1000 + index}`,
+    ordersCount: ordersForCustomer.length,
+    totalSpent: ordersForCustomer.reduce((sum, order) => sum + order.total, 0),
+    since: `202${4 + (index % 3)}-0${1 + (index % 9)}-15`,
+    status: index === 8 ? "inativo" : "ativo",
   };
 });
