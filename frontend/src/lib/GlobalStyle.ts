@@ -64,4 +64,11 @@ export const GlobalStyle = createGlobalStyle`
     display: block;
     max-width: 100%;
   }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.gold};
+    outline-offset: 2px;
+  }
 `;

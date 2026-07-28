@@ -1,8 +1,21 @@
+import Hero from "@/components/home/Hero";
+import Collection from "@/components/home/Collection";
+import Story from "@/components/home/Story";
+import BestSellers from "@/components/home/BestSellers";
+import Testimonials from "@/components/home/Testimonials";
+import TrustBar from "@/components/home/TrustBar";
+import Newsletter from "@/components/home/Newsletter";
+
 export default function HomePage() {
   return (
-    <section style={{ padding: "4rem 2rem", textAlign: "center" }}>
-      <h1>Essence Perfumes</h1>
-      <p>Home (em construção)</p>
-    </section>
+    <>
+      <Hero />
+      <Collection />
+      <Story />
+      <BestSellers />
+      <Testimonials />
+      <TrustBar />
+      <Newsletter />
+    </>
   );
 }
