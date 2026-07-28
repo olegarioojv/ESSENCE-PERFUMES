@@ -136,6 +136,27 @@ export interface AdminAlert {
   description: string;
 }
 
+// ---------------------------------------------------------------------------
+// Produtos
+// ---------------------------------------------------------------------------
+
+export interface AdminProduct extends HomeProduct {
+  sku: string;
+  stock: number;
+  status: "ativo" | "inativo";
+}
+
+function skuFromSlug(slug: string): string {
+  return slug.replace("essence-", "ESS-").toUpperCase();
+}
+
+export const adminProducts: AdminProduct[] = uniqueProducts.map((product, index) => ({
+  ...product,
+  sku: skuFromSlug(product.slug),
+  stock: [42, 18, 65, 30, 12, 54, 8][index] ?? 25,
+  status: "ativo",
+}));
+
 export const adminAlerts: AdminAlert[] = [
   { id: "stock", kind: "stock", title: "Estoque baixo", description: "12 produtos com estoque baixo" },
   { id: "orders", kind: "order", title: "Pedidos pendentes", description: "22 pedidos aguardando processamento" },
