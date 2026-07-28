@@ -325,13 +325,13 @@ contra banco real.
 
 ## Loja
 
--   [ ] Home
--   [ ] Catálogo
--   [ ] Produto
--   [ ] Carrinho
--   [ ] Checkout
--   [ ] Login
--   [ ] Minha Conta
+-   [x] Home
+-   [x] Catálogo
+-   [x] Produto
+-   [x] Carrinho
+-   [x] Checkout
+-   [x] Login
+-   [x] Minha Conta
 
 ## Painel Administrativo
 

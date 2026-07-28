@@ -1,35 +1,31 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import ProductDetail from "@/components/product/ProductDetail";
+import { findProductBySlug, relatedProducts } from "@/lib/data/mockProducts";
 
 interface ProdutoPageProps {
   params: Promise<{ slug: string }>;
 }
 
-/**
- * Demonstrates the dynamic-metadata pattern (Metadata API) for the Fase 17
- * scaffolding stage: real data fetching from the backend `/products/:slug`
- * endpoint happens once the Produto page is actually implemented.
- */
 export async function generateMetadata({
   params,
 }: ProdutoPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const name = slug
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  const product = findProductBySlug(slug);
 
   return {
-    title: name,
-    description: `Detalhes do produto ${name} na Essence Perfumes.`,
+    title: product?.name ?? "Produto",
+    description: product?.description ?? `Detalhes do produto na Essence Perfumes.`,
   };
 }
 
 export default async function ProdutoPage({ params }: ProdutoPageProps) {
   const { slug } = await params;
+  const product = findProductBySlug(slug);
 
-  return (
-    <section style={{ padding: "3rem 2rem" }}>
-      <h1>Produto: {slug} (em construção)</h1>
-    </section>
-  );
+  if (!product) {
+    notFound();
+  }
+
+  return <ProductDetail product={product} related={relatedProducts(slug)} />;
 }

@@ -1,10 +1,16 @@
 /**
- * Mock catalog data for the storefront home page.
+ * Mock catalog data for the storefront.
  *
  * Placeholder until Fase 18 (Integração) wires these sections up to the real
  * `/products` endpoint. `swatch` is the gradient fallback used where no real
  * product photo exists yet; `image` (public/ path) takes priority when set.
  */
+
+export interface OlfactoryNotes {
+  top: string[];
+  heart: string[];
+  base: string[];
+}
 
 export interface HomeProduct {
   slug: string;
@@ -16,6 +22,12 @@ export interface HomeProduct {
   reviewCount?: number;
   swatch: [string, string];
   image?: string;
+  collection?: string;
+  concentration?: string;
+  family?: string;
+  fixation?: string;
+  sizes?: number[];
+  notes?: OlfactoryNotes;
 }
 
 export const essenceCollection: HomeProduct[] = [
@@ -27,6 +39,16 @@ export const essenceCollection: HomeProduct[] = [
     volumeMl: 100,
     swatch: ["#D9B98C", "#8A6A3B"],
     image: "/card1.jpeg",
+    collection: "Timeless Collection",
+    concentration: "Eau de Parfum",
+    family: "Woody Floral",
+    fixation: "High longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Bergamot", "Pink Pepper", "Cardamom"],
+      heart: ["Jasmine", "Lavender", "Iris"],
+      base: ["Amber", "Patchouli", "Sandalwood", "Musk"],
+    },
   },
   {
     slug: "essence-botanical",
@@ -36,6 +58,16 @@ export const essenceCollection: HomeProduct[] = [
     volumeMl: 100,
     swatch: ["#2E3B36", "#0E0D0C"],
     image: "/card3.jpeg",
+    collection: "Botanical Collection",
+    concentration: "Eau de Parfum",
+    family: "Green Floral",
+    fixation: "Moderate longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Green Leaves", "Bergamot", "Mint"],
+      heart: ["Lily of the Valley", "Jasmine", "Violet"],
+      base: ["Vetiver", "Musk", "Cedar"],
+    },
   },
   {
     slug: "essence-midnight",
@@ -45,6 +77,16 @@ export const essenceCollection: HomeProduct[] = [
     volumeMl: 100,
     swatch: ["#1A1816", "#0E0D0C"],
     image: "/card2.jpeg",
+    collection: "Midnight Collection",
+    concentration: "Eau de Parfum",
+    family: "Oriental Woody",
+    fixation: "High longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Black Pepper", "Bergamot", "Saffron"],
+      heart: ["Oud", "Rose", "Leather"],
+      base: ["Amber", "Vanilla", "Sandalwood"],
+    },
   },
 ];
 
@@ -57,6 +99,16 @@ export const bestSellers: HomeProduct[] = [
     rating: 5,
     reviewCount: 128,
     swatch: ["#1A1816", "#0E0D0C"],
+    collection: "Signature Collection",
+    concentration: "Eau de Parfum",
+    family: "Amber Woody",
+    fixation: "High longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Cinnamon", "Orange", "Nutmeg"],
+      heart: ["Rose", "Cedar", "Clove"],
+      base: ["Amber", "Tonka Bean", "Musk"],
+    },
   },
   {
     slug: "velvet-noir",
@@ -67,6 +119,16 @@ export const bestSellers: HomeProduct[] = [
     reviewCount: 95,
     swatch: ["#5A1A24", "#1A0A0D"],
     image: "/best1.png",
+    collection: "Noir Collection",
+    concentration: "Eau de Parfum",
+    family: "Fruity Floral",
+    fixation: "Moderate longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Blackcurrant", "Raspberry", "Bergamot"],
+      heart: ["Rose", "Peony", "Plum"],
+      base: ["Patchouli", "Musk", "Vanilla"],
+    },
   },
   {
     slug: "lumiere",
@@ -76,6 +138,16 @@ export const bestSellers: HomeProduct[] = [
     rating: 4,
     reviewCount: 87,
     swatch: ["#EDE3D0", "#B08D57"],
+    collection: "Lumière Collection",
+    concentration: "Eau de Parfum",
+    family: "Citrus Floral",
+    fixation: "Moderate longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Lemon", "Neroli", "Mandarin"],
+      heart: ["White Flowers", "Jasmine", "Orange Blossom"],
+      base: ["White Musk", "Cedar", "Ambrette"],
+    },
   },
   {
     slug: "oud-supreme",
@@ -85,8 +157,28 @@ export const bestSellers: HomeProduct[] = [
     rating: 4,
     reviewCount: 73,
     swatch: ["#5B5A4E", "#2A2A22"],
+    collection: "Suprême Collection",
+    concentration: "Eau de Parfum",
+    family: "Oud Woody",
+    fixation: "High longevity",
+    sizes: [50, 100, 200],
+    notes: {
+      top: ["Saffron", "Cardamom"],
+      heart: ["Oud", "Rose"],
+      base: ["Sandalwood", "Amber", "Leather"],
+    },
   },
 ];
+
+export const allProducts: HomeProduct[] = [...essenceCollection, ...bestSellers];
+
+export function findProductBySlug(slug: string): HomeProduct | undefined {
+  return allProducts.find((product) => product.slug === slug);
+}
+
+export function relatedProducts(slug: string, count = 4): HomeProduct[] {
+  return allProducts.filter((product) => product.slug !== slug).slice(0, count);
+}
 
 export interface Testimonial {
   name: string;
@@ -114,3 +206,47 @@ export const testimonials: Testimonial[] = [
     rating: 5,
   },
 ];
+
+/**
+ * Mock account data for the "Minha Conta" page — stands in for the real
+ * `/users/me`, `/orders`, `/addresses` etc. endpoints until Fase 18.
+ */
+export interface MockOrder {
+  id: string;
+  date: string;
+  itemCount: number;
+  status: "delivered" | "shipping" | "processing";
+  total: number;
+}
+
+export const mockUser = {
+  name: "João Victor",
+  email: "joaovictor@email.com",
+  phone: "(35) 99999-9999",
+  birthDate: "1999-07-15",
+  cpf: "000.000.000-00",
+  gender: "Masculino",
+};
+
+export const mockOrders: MockOrder[] = [
+  { id: "#12345", date: "2026-07-27", itemCount: 4, status: "delivered", total: 1259.64 },
+  { id: "#12320", date: "2026-07-10", itemCount: 2, status: "shipping", total: 699.8 },
+  { id: "#12288", date: "2026-07-01", itemCount: 3, status: "processing", total: 1049.7 },
+  { id: "#12210", date: "2026-06-15", itemCount: 1, status: "delivered", total: 349.9 },
+];
+
+export const mockAddress = {
+  label: "Principal",
+  street: "Rua das Flores, 123",
+  complement: "Apto 45 — Centro",
+  city: "Extrema, MG — 37640-000",
+  country: "Brasil",
+  phone: "(35) 99999-9999",
+};
+
+export const mockPaymentMethods = [
+  { brand: "Visa", last4: "4242", expiry: "04/2028", isDefault: true },
+  { brand: "Mastercard", last4: "8888", expiry: "09/2027", isDefault: false },
+];
+
+export const mockFavorites: HomeProduct[] = [essenceCollection[0], essenceCollection[2]];
