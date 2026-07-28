@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 /**
  * Shared Axios instance for talking to the Essence Perfumes NestJS backend.
@@ -6,11 +7,6 @@ import axios from "axios";
  * The base URL defaults to the local backend (see backend/.env.example,
  * which runs on port 3000) and can be overridden via
  * NEXT_PUBLIC_API_URL at build/deploy time.
- *
- * The request interceptor below is a placeholder: real auth-token wiring
- * (reading the access token from the auth store/cookies, refresh-on-401,
- * etc.) is Fase 18 "Integração" work. For now it demonstrates the shape
- * future code will fill in.
  */
 
 export const API_BASE_URL =
@@ -24,16 +20,38 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  // Placeholder: wire this up to the real auth store once login (Fase 18)
-  // is implemented. Left here so the interceptor plumbing is proven out.
-  const token: string | null =
-    typeof window !== "undefined" ? window.localStorage.getItem("accessToken") : null;
-
+  const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+/**
+ * Normalizes the backend's error envelope (`{statusCode, timestamp, path,
+ * message}`, where `message` is a `string` for most errors but a `string[]`
+ * for class-validator validation failures) into a single display string.
+ */
+export function parseApiError(error: unknown, fallback = "Algo deu errado. Tente novamente."): string {
+  if (axios.isAxiosError(error)) {
+    const message = (error.response?.data as { message?: string | string[] } | undefined)?.message;
+    if (Array.isArray(message)) return message.join(" ");
+    if (typeof message === "string") return message;
+  }
+  return fallback;
+}
 
 export default apiClient;
