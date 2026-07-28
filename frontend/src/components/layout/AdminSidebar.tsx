@@ -13,7 +13,7 @@ import {
   TagIcon,
   UsersIcon,
 } from "@/components/icons/Icons";
-import { mockUser } from "@/lib/data/mockProducts";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const Aside = styled.aside`
   width: 240px;
@@ -145,6 +145,7 @@ function initials(name: string): string {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
 
   return (
     <Aside>
@@ -170,9 +171,9 @@ export default function AdminSidebar() {
         </div>
       </HelpCard>
       <UserFooter>
-        <Avatar>{initials(mockUser.name)}</Avatar>
+        <Avatar>{initials(user?.name ?? "?")}</Avatar>
         <div>
-          <UserName>{mockUser.name}</UserName>
+          <UserName>{user?.name ?? "..."}</UserName>
           <UserRole>Administrador</UserRole>
         </div>
       </UserFooter>

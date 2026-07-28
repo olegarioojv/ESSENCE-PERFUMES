@@ -9,6 +9,7 @@ import FormField, { Input, Select } from "@/components/form/FormField";
 import { ArrowRightIcon, CraftIcon, LeafIcon, ShieldIcon, StarIcon, TruckIcon } from "@/components/icons/Icons";
 import { checkoutDeliverySchema } from "@/lib/validations/checkoutSchema";
 import { STANDARD_SHIPPING, formatPrice } from "@/lib/cart";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 
 const Wrap = styled.div`
   max-width: 1280px;
@@ -262,6 +263,7 @@ const deliveryMethods = [
 ] as const;
 
 export default function CheckoutPage() {
+  const ready = useRequireAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<(typeof deliveryMethods)[number]["id"]>("standard");
@@ -292,6 +294,8 @@ export default function CheckoutPage() {
   function handleApplyCoupon() {
     setCouponMessage(coupon.trim() ? "Invalid or expired coupon." : "Enter a coupon code.");
   }
+
+  if (!ready) return null;
 
   return (
     <Wrap>

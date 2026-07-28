@@ -2,11 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import TrustBar from "@/components/home/TrustBar";
 import FormField, { Input } from "@/components/form/FormField";
 import { EyeIcon, EyeOffIcon } from "@/components/icons/Icons";
 import { loginSchema } from "@/lib/validations/loginSchema";
+import { apiClient, parseApiError } from "@/lib/api/client";
+import { useAuthStore, type AuthSession } from "@/lib/store/useAuthStore";
 
 const Wrap = styled.div`
   padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.xl};
@@ -151,6 +154,11 @@ const Feedback = styled.p`
   color: ${({ theme }) => theme.colors.success};
 `;
 
+const ErrorFeedback = styled.p`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.danger};
+`;
+
 const CreateAccount = styled.p`
   margin-top: ${({ theme }) => theme.spacing.xl};
   font-size: ${({ theme }) => theme.fontSizes.sm};
@@ -165,12 +173,16 @@ const CreateAccount = styled.p`
 `;
 
 export default function LoginPage() {
+  const router = useRouter();
+  const setSession = useAuthStore((state) => state.setSession);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const result = loginSchema.safeParse({
@@ -189,8 +201,18 @@ export default function LoginPage() {
     }
 
     setErrors({});
-    setSubmitted(true);
-    // Real submission (POST /auth/login via apiClient) lands in Fase 18.
+    setApiError(null);
+    setLoading(true);
+    try {
+      const { data } = await apiClient.post<AuthSession>("/auth/login", result.data);
+      setSession(data);
+      setSubmitted(true);
+      router.push(data.user.role === "admin" ? "/dashboard" : "/conta");
+    } catch (error) {
+      setApiError(parseApiError(error, "Não foi possível entrar. Verifique suas credenciais."));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -238,8 +260,11 @@ export default function LoginPage() {
             <ForgotLink href="/recuperar-senha">Forgot your password?</ForgotLink>
           </OptionsRow>
 
-          <SubmitButton type="submit">Sign In</SubmitButton>
-          {submitted && <Feedback role="status">Valid credentials (real integration lands in Fase 18).</Feedback>}
+          <SubmitButton type="submit" disabled={loading}>
+            {loading ? "Entrando..." : "Sign In"}
+          </SubmitButton>
+          {submitted && <Feedback role="status">Login realizado com sucesso.</Feedback>}
+          {apiError && <ErrorFeedback role="alert">{apiError}</ErrorFeedback>}
 
           <Divider>Or continue with</Divider>
 

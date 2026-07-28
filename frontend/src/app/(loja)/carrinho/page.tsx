@@ -11,6 +11,7 @@ import { ArrowRightIcon, CloseIcon, ShieldIcon, TruckIcon } from "@/components/i
 import { useCartStore } from "@/lib/store/useCartStore";
 import { findProductBySlug, relatedProducts } from "@/lib/data/mockProducts";
 import { amountToFreeShipping, cartSubtotal, formatPrice, FREE_SHIPPING_THRESHOLD } from "@/lib/cart";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 
 const Wrap = styled.div`
   max-width: 1280px;
@@ -286,6 +287,7 @@ const EmptyState = styled.div`
 `;
 
 export default function CarrinhoPage() {
+  const ready = useRequireAuth();
   const items = useCartStore((state) => state.items);
   const setQuantity = useCartStore((state) => state.setQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
@@ -294,6 +296,8 @@ export default function CarrinhoPage() {
   const subtotal = cartSubtotal(items);
   const remaining = amountToFreeShipping(subtotal);
   const percent = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+
+  if (!ready) return null;
 
   return (
     <Wrap>

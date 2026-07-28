@@ -10,6 +10,8 @@ import { BagIcon, EditIcon, PinIcon } from "@/components/icons/Icons";
 import { mockAddress, mockFavorites, mockOrders, mockPaymentMethods, mockUser } from "@/lib/data/mockProducts";
 import { formatPrice } from "@/lib/cart";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const Wrap = styled.div`
   max-width: 1280px;
@@ -457,9 +459,16 @@ function initials(name: string): string {
 }
 
 export default function ContaPage() {
+  const ready = useRequireAuth();
+  const authUser = useAuthStore((state) => state.user);
   const addItem = useCartStore((state) => state.addItem);
   const [promoEmail, setPromoEmail] = useState("");
   const [promoSubmitted, setPromoSubmitted] = useState(false);
+
+  if (!ready) return null;
+
+  const displayName = authUser?.name ?? mockUser.name;
+  const displayEmail = authUser?.email ?? mockUser.email;
 
   return (
     <Wrap>
@@ -468,9 +477,9 @@ export default function ContaPage() {
 
       <Layout>
         <Sidebar>
-          <Avatar>{initials(mockUser.name)}</Avatar>
-          <UserName>{mockUser.name}</UserName>
-          <UserEmail>{mockUser.email}</UserEmail>
+          <Avatar>{initials(displayName)}</Avatar>
+          <UserName>{displayName}</UserName>
+          <UserEmail>{displayEmail}</UserEmail>
 
           <SidebarNav>
             {sidebarItems.map((item) => (
@@ -497,7 +506,7 @@ export default function ContaPage() {
             <DataGrid>
               <DataField>
                 <h3>Full Name</h3>
-                <p>{mockUser.name}</p>
+                <p>{displayName}</p>
               </DataField>
               <DataField>
                 <h3>Birth Date</h3>
@@ -505,7 +514,7 @@ export default function ContaPage() {
               </DataField>
               <DataField>
                 <h3>Email</h3>
-                <p>{mockUser.email}</p>
+                <p>{displayEmail}</p>
               </DataField>
               <DataField>
                 <h3>CPF</h3>
