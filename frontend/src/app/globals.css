@@ -11,7 +11,11 @@ html {
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) — `hidden` on one axis forces the other axis's
+     computed overflow to `auto` per spec, which turns body into its own
+     scroll container and silently breaks `position: sticky` on every
+     descendant (the header included). */
+  overflow-x: clip;
 }
 
 body {

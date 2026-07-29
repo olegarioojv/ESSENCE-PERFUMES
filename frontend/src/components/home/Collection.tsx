@@ -145,7 +145,7 @@ export default function Collection() {
   }
 
   return (
-    <Wrap>
+    <Wrap id="colecao">
       <Eyebrow>Our Signature</Eyebrow>
       <Title>The Essence Collection</Title>
       <Rule />

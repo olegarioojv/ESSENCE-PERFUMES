@@ -26,6 +26,21 @@ export const theme = {
     danger: "#B3261E",
     success: "#2E5339",
     white: "#FFFFFF",
+    /**
+     * Cinematic dark palette for premium showcase moments (Hero, and future
+     * redesigned screens per the luxury-redesign brief). Scoped under its
+     * own namespace instead of replacing the storefront's light palette
+     * above, so introducing it doesn't repaint the whole site at once.
+     */
+    luxe: {
+      background: "#070707",
+      card: "#101010",
+      text: "#FFFFFF",
+      textMuted: "#A7A7A7",
+      border: "rgba(255, 255, 255, 0.08)",
+      gold: "#D4AF37",
+      champagne: "#E8D7B3",
+    },
   },
   fonts: {
     heading: "var(--font-heading), 'Playfair Display', Georgia, serif",

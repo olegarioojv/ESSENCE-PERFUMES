@@ -1,24 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import styled from "styled-components";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCartStore } from "@/lib/store/useCartStore";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { SearchIcon, AccountIcon, CartIcon, MenuIcon, CloseIcon } from "@/components/icons/Icons";
 
-const Bar = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+/** Exported so pages with a dark hero (currently just Home) can add matching
+ * top padding — the navbar overlaps them via a negative margin instead of
+ * taking up layout space, so its height has to be compensated somewhere. */
+export const HEADER_HEIGHT = 84;
+
+const Bar = styled.header<{ $solid: boolean; $overlap: boolean }>`
   position: sticky;
   top: 0;
   z-index: ${({ theme }) => theme.zIndices.header};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  margin-bottom: ${({ $overlap }) => ($overlap ? `-${HEADER_HEIGHT}px` : "0")};
+  background: ${({ $solid }) => ($solid ? "rgba(7, 7, 7, 0.78)" : "transparent")};
+  backdrop-filter: ${({ $solid }) => ($solid ? "blur(16px) saturate(140%)" : "none")};
+  -webkit-backdrop-filter: ${({ $solid }) => ($solid ? "blur(16px) saturate(140%)" : "none")};
+  border-bottom: 1px solid
+    ${({ $solid, theme }) => ($solid ? theme.colors.luxe.border : "transparent")};
+  box-shadow: ${({ $solid }) => ($solid ? "0 8px 30px rgba(0, 0, 0, 0.35)" : "none")};
+  transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease,
+    border-color 0.4s ease;
 `;
 
 const Side = styled.div`
@@ -41,10 +54,28 @@ const Nav = styled.nav`
 `;
 
 const NavLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.ink};
+  position: relative;
+  color: ${({ theme }) => theme.colors.luxe.text};
+  padding-bottom: 4px;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 0;
+    height: 1px;
+    background: ${({ theme }) => theme.colors.luxe.gold};
+    transition: left 0.25s ease, right 0.25s ease;
+  }
 
   &:hover {
-    color: ${({ theme }) => theme.colors.gold};
+    color: ${({ theme }) => theme.colors.luxe.gold};
+  }
+
+  &:hover::after {
+    left: 0;
+    right: 0;
   }
 `;
 
@@ -52,7 +83,7 @@ const MenuToggle = styled.button`
   display: none;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.ink};
+  color: ${({ theme }) => theme.colors.luxe.text};
   background: transparent;
 
   svg {
@@ -65,7 +96,7 @@ const MenuToggle = styled.button`
   }
 `;
 
-const MobilePanel = styled.nav`
+const MobilePanel = styled(motion.nav)`
   display: none;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
@@ -75,31 +106,47 @@ const MobilePanel = styled.nav`
     top: 100%;
     left: 0;
     right: 0;
-    background-color: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    background: rgba(7, 7, 7, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid ${({ theme }) => theme.colors.luxe.border};
     padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
     gap: ${({ theme }) => theme.spacing.md};
     font-size: ${({ theme }) => theme.fontSizes.sm};
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    overflow: hidden;
   }
 `;
 
 const MobileNavLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.ink};
+  color: ${({ theme }) => theme.colors.luxe.text};
   padding: ${({ theme }) => theme.spacing.xs} 0;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.gold};
+    color: ${({ theme }) => theme.colors.luxe.gold};
   }
 `;
 
 const Logo = styled(Link)`
-  position: relative;
-  display: block;
-  width: 190px;
-  height: 64px;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+`;
+
+const LogoMark = styled.span`
+  font-family: ${({ theme }) => theme.fonts.heading};
+  font-size: ${({ theme }) => theme.fontSizes.lg};
+  letter-spacing: 0.14em;
+  color: ${({ theme }) => theme.colors.luxe.text};
+`;
+
+const LogoSub = styled.span`
+  font-size: 0.55rem;
+  letter-spacing: 0.35em;
+  color: ${({ theme }) => theme.colors.luxe.gold};
+  margin-top: 2px;
 `;
 
 const Actions = styled.div`
@@ -112,8 +159,9 @@ const Actions = styled.div`
 
 const IconLink = styled(Link)`
   position: relative;
-  color: ${({ theme }) => theme.colors.ink};
+  color: ${({ theme }) => theme.colors.luxe.text};
   display: flex;
+  transition: color 0.2s ease, transform 0.2s ease;
 
   svg {
     width: 18px;
@@ -121,7 +169,8 @@ const IconLink = styled(Link)`
   }
 
   &:hover {
-    color: ${({ theme }) => theme.colors.gold};
+    color: ${({ theme }) => theme.colors.luxe.gold};
+    transform: translateY(-1px);
   }
 `;
 
@@ -133,9 +182,10 @@ const CartCount = styled.span`
   height: 15px;
   padding: 0 3px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.colors.gold};
-  color: ${({ theme }) => theme.colors.white};
+  background: ${({ theme }) => theme.colors.luxe.gold};
+  color: #070707;
   font-size: 0.6rem;
+  font-weight: ${({ theme }) => theme.fontWeights.semibold};
   line-height: 15px;
   text-align: center;
 `;
@@ -148,11 +198,15 @@ const navItems = [
 ];
 
 export default function Header() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const [scrolled, setScrolled] = useState(!isHome);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const totalItems = useCartStore((state) => state.totalItems());
   const fetchCart = useCartStore((state) => state.fetchCart);
   const user = useAuthStore((state) => state.user);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (hasHydrated && user) {
@@ -160,8 +214,27 @@ export default function Header() {
     }
   }, [hasHydrated, user, fetchCart]);
 
+  useEffect(() => {
+    if (!isHome) {
+      setScrolled(true);
+      return;
+    }
+    setScrolled(window.scrollY > 16);
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 16);
+        ticking = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
+
   return (
-    <Bar>
+    <Bar $solid={scrolled} $overlap={isHome}>
       <Side>
         <Nav>
           {navItems.map((item) => (
@@ -183,13 +256,8 @@ export default function Header() {
       </Side>
 
       <Logo href="/" aria-label="Essence Perfumes">
-        <Image
-          src="/logo.png"
-          alt="Essence Perfumes"
-          fill
-          sizes="190px"
-          style={{ objectFit: "contain", objectPosition: "center" }}
-        />
+        <LogoMark>ESSENCE</LogoMark>
+        <LogoSub>PERFUMES</LogoSub>
       </Logo>
 
       <Actions>
@@ -205,19 +273,27 @@ export default function Header() {
         </IconLink>
       </Actions>
 
-      {menuOpen && (
-        <MobilePanel id="mobile-nav">
-          {navItems.map((item) => (
-            <MobileNavLink
-              key={item.label}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </MobileNavLink>
-          ))}
-        </MobilePanel>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <MobilePanel
+            id="mobile-nav"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {navItems.map((item) => (
+              <MobileNavLink
+                key={item.label}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </MobileNavLink>
+            ))}
+          </MobilePanel>
+        )}
+      </AnimatePresence>
     </Bar>
   );
 }

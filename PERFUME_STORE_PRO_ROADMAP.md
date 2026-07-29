@@ -353,6 +353,10 @@ contra banco real.
 -   [x] Carrinho
 -   [x] Checkout
 -   [x] Dashboard
+-   [x] Testado end-to-end (app rodando de verdade: login cliente/admin,
+    catálogo, carrinho, checkout com criação real de pedido, validação
+    de estoque, todas as páginas admin — bug de add-to-cart sem login
+    encontrado e corrigido em f75f2bb)
 
 ------------------------------------------------------------------------
 
