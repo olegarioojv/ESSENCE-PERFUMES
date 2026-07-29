@@ -1,13 +1,12 @@
-/**
- * pt-BR formatting helpers for the Painel Administrativo. Kept separate from
- * `lib/cart.ts`, which is Loja-scoped (en-US copy, `$` formatting) — the
- * admin panel is pt-BR/`R$` throughout.
- */
+export const brl = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
-export function formatPriceBRL(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+export function formatPrice(v: number): string {
+  return brl.format(v);
 }
 
-export function formatDateBR(iso: string): string {
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(iso));
+export function installments(v: number, n = 10): string {
+  return `${n}x de ${brl.format(v / n)} sem juros`;
 }
