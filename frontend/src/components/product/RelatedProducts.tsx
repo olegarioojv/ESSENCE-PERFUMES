@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import ProductSwatch from "@/components/product/ProductSwatch";
 import { BagIcon } from "@/components/icons/Icons";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { formatPrice } from "@/lib/cart";
 import type { HomeProduct } from "@/lib/data/mockProducts";
 
@@ -74,7 +76,17 @@ export default function RelatedProducts({
   title?: string;
   products: HomeProduct[];
 }) {
+  const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const user = useAuthStore((state) => state.user);
+
+  function handleAdd(item: HomeProduct) {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    addItem({ productId: item.id ?? item.slug, name: item.name, price: item.price, quantity: 1 }).catch(() => {});
+  }
 
   if (products.length === 0) return null;
 
@@ -93,11 +105,7 @@ export default function RelatedProducts({
               <Add
                 type="button"
                 aria-label={`Add ${item.name} to bag`}
-                onClick={() =>
-                  addItem({ productId: item.id ?? item.slug, name: item.name, price: item.price, quantity: 1 }).catch(
-                    () => {},
-                  )
-                }
+                onClick={() => handleAdd(item)}
               >
                 <BagIcon />
               </Add>

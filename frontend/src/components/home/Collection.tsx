@@ -7,7 +7,9 @@ import ProductSwatch from "@/components/product/ProductSwatch";
 import { BagIcon, CheckIcon } from "@/components/icons/Icons";
 import { fetchProducts } from "@/lib/api/products";
 import type { HomeProduct } from "@/lib/data/mockProducts";
+import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const COLLECTION_SLUGS = ["essence-legacy", "essence-botanical", "essence-rose"];
 
@@ -115,7 +117,9 @@ const ViewAll = styled(Link)`
 `;
 
 export default function Collection() {
+  const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const user = useAuthStore((state) => state.user);
   const [essenceCollection, setEssenceCollection] = useState<HomeProduct[]>([]);
   const [addedSlug, setAddedSlug] = useState<string | null>(null);
 
@@ -127,11 +131,17 @@ export default function Collection() {
   }, []);
 
   function handleAdd(product: HomeProduct) {
-    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).then(
+      () => {
+        setAddedSlug(product.slug);
+        setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
+      },
       () => {},
     );
-    setAddedSlug(product.slug);
-    setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
   }
 
   return (

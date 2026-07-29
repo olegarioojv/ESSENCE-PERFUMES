@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductSwatch from "@/components/product/ProductSwatch";
 import { BagIcon, CheckIcon } from "@/components/icons/Icons";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { formatPrice } from "@/lib/cart";
 import { fetchProducts } from "@/lib/api/products";
 import type { HomeProduct } from "@/lib/data/mockProducts";
@@ -172,7 +174,9 @@ function sortProducts(products: HomeProduct[], sort: SortOption): HomeProduct[] 
 }
 
 export default function CatalogoPage() {
+  const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const user = useAuthStore((state) => state.user);
   const [products, setProducts] = useState<HomeProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFamily, setActiveFamily] = useState<string | null>(null);
@@ -196,11 +200,17 @@ export default function CatalogoPage() {
   }, [products, activeFamily, sort]);
 
   function handleAdd(product: HomeProduct) {
-    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).then(
+      () => {
+        setAddedSlug(product.slug);
+        setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
+      },
       () => {},
     );
-    setAddedSlug(product.slug);
-    setTimeout(() => setAddedSlug((current) => (current === product.slug ? null : current)), 1500);
   }
 
   return (

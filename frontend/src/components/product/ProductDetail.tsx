@@ -8,6 +8,7 @@ import RelatedProducts from "@/components/product/RelatedProducts";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import { BagIcon, CraftIcon, LeafIcon, ShieldIcon, StarIcon, TruckIcon } from "@/components/icons/Icons";
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { formatPrice } from "@/lib/cart";
 import type { HomeProduct } from "@/lib/data/mockProducts";
 
@@ -296,6 +297,7 @@ export default function ProductDetail({
 }) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const user = useAuthStore((state) => state.user);
   const sizes = product.sizes ?? [product.volumeMl];
   const [activeSize, setActiveSize] = useState(product.volumeMl);
   const [activeThumb, setActiveThumb] = useState(0);
@@ -304,14 +306,24 @@ export default function ProductDetail({
   const gallery = [product.image, product.image, product.image].filter(Boolean) as string[];
 
   function handleAddToCart() {
-    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).then(
+      () => {
+        setAdded(true);
+        setTimeout(() => setAdded(false), 1500);
+      },
       () => {},
     );
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
   }
 
   async function handleBuyNow() {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
     await addItem({ productId: product.id ?? product.slug, name: product.name, price: product.price, quantity: 1 }).catch(
       () => {},
     );
