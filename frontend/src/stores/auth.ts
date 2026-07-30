@@ -8,6 +8,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   setSession: (user: User, token: string) => void;
 }
@@ -37,6 +38,21 @@ export const useAuth = create<AuthState>()(
         set({
           token,
           user: res.user ?? { id: "me", email },
+          isAuthenticated: true,
+        });
+      },
+      async register(name, email, password) {
+        const res = await api<LoginResponse>("/auth/register", {
+          method: "POST",
+          body: { name, email, password },
+          auth: false,
+        });
+        const token = res.accessToken ?? res.access_token ?? res.token ?? null;
+        if (!token) throw new Error("Resposta de cadastro inválida.");
+        setToken(token);
+        set({
+          token,
+          user: res.user ?? { id: "me", email, name },
           isAuthenticated: true,
         });
       },
